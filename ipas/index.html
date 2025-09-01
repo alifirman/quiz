@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis IPAS: Makhluk Hidup dan Lingkungannya</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 900px;
+            padding: 2rem;
+            margin: auto;
+        }
+        .quiz-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            text-align: center;
+        }
+        .timer-bar {
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            margin-top: 1rem;
+        }
+        .timer-progress {
+            height: 100%;
+            background-color: #84cc16; /* Hijau pupus */
+            width: 100%;
+            transition: width linear;
+            border-radius: 9999px;
+        }
+        .timer-text {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .option-item {
+            cursor: pointer;
+            background-color: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: left;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+        .option-item:hover {
+            border-color: #65a30d; /* Hijau yang lebih gelap saat hover */
+        }
+        .option-item.selected {
+            background-color: #d1fae5; /* Hijau yang sangat pupus */
+            border-color: #4b901a; /* Hijau gelap */
+        }
+        .option-item.correct {
+            background-color: #d1fae5;
+            border-color: #059669;
+        }
+        .option-item.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .next-btn {
+            background-color: #84cc16; /* Hijau pupus */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        .next-btn:hover:not(:disabled) {
+            background-color: #65a30d; /* Hijau yang lebih gelap */
+        }
+        .next-btn:disabled {
+            background-color: #d1fae5; /* Hijau yang sangat pupus */
+            cursor: not-allowed;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            margin-top: 0.5rem;
+        }
+        .review-box {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f3f4f6;
+            border-radius: 0.75rem;
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="p-6">
+
+<div id="quiz-container" class="container">
+    <div id="start-screen" class="quiz-card">
+        <h1 class="text-3xl font-bold mb-4">Kuis IPAS: Makhluk Hidup dan Lingkungannya</h1>
+        <p class="mb-6 text-gray-600">Jawab 15 soal berikut dalam waktu 10 detik per soal. Jika waktu habis, jawaban Anda akan dianggap salah secara otomatis dan soal akan berpindah.</p>
+        
+        <div class="form-group">
+            <label for="student-name">Nama Lengkap</label>
+            <input type="text" id="student-name" placeholder="Masukkan nama Anda..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div class="form-group">
+            <label for="student-class">Kelas</label>
+            <select id="student-class" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                <option value="" disabled selected>Pilih kelas...</option>
+                <option value="X TSM1">X TSM1</option>
+                <option value="X MP">X MP</option>
+                <option value="X AK">X AK</option>
+            </select>
+        </div>
+        <button id="start-btn" class="next-btn w-full mt-4" disabled>Mulai Kuis</button>
+    </div>
+
+    <div id="quiz-content" class="quiz-card hidden">
+        <div class="flex justify-between items-center mb-4">
+            <span id="question-counter" class="text-lg font-semibold text-gray-500">Soal 1/15</span>
+            <div class="flex items-center">
+                <span id="timer-display" class="timer-text mr-2">10</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-gray-500">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+        <div class="timer-bar">
+            <div id="timer-progress" class="timer-progress"></div>
+        </div>
+        
+        <h2 id="question-text" class="text-2xl font-semibold mt-6 mb-4"></h2>
+        <div id="options-container" class="flex flex-col mt-4"></div>
+        
+        <button id="next-btn" class="next-btn w-full hidden">Soal Selanjutnya</button>
+    </div>
+
+    <div id="results-screen" class="quiz-card hidden">
+        <h2 class="text-3xl font-bold mb-2">Hasil Kuis</h2>
+        <p id="student-info" class="text-lg text-gray-600 mb-4"></p>
+        <p id="final-score" class="text-5xl font-extrabold mb-4"></p>
+        <p id="score-text" class="text-xl mb-6"></p>
+
+        <div id="review-container" class="mt-8 text-left">
+            <h3 class="text-2xl font-bold mb-4">Saran dan Motivasi</h3>
+            <p id="feedback-text" class="text-gray-600"></p>
+        </div>
+        <button onclick="window.location.reload()" class="next-btn mt-6">Coba Lagi</button>
+    </div>
+</div>
+
+<script>
+    const quizData = {
+        "questions": [
+            {
+                "question": "Manakah dari komponen ekosistem berikut ini yang berperan sebagai produsen?",
+                "hint": "Produsen adalah organisme yang dapat membuat makanannya sendiri.",
+                "answerOptions": [
+                    {"text": "Jamur", "isCorrect": false, "rationale": "Jamur adalah dekomposer, mereka mengurai bahan organik mati."},
+                    {"text": "Kelinci", "isCorrect": false, "rationale": "Kelinci adalah konsumen primer, mereka memakan tumbuhan."},
+                    {"text": "Bakteri pengurai", "isCorrect": false, "rationale": "Bakteri pengurai berfungsi sebagai dekomposer, bukan produsen."},
+                    {"text": "Tumbuhan hijau", "isCorrect": true, "rationale": "Tumbuhan hijau adalah produsen karena mereka menghasilkan makanannya sendiri melalui fotosintesis."},
+                    {"text": "Manusia", "isCorrect": false, "rationale": "Manusia adalah konsumen, mereka bergantung pada organisme lain untuk mendapatkan energi."}
+                ]
+            },
+            {
+                "question": "Hubungan antara dua spesies di mana satu spesies mendapat manfaat dan spesies lain dirugikan disebut simbiosis...",
+                "hint": "Pikirkan tentang hubungan antara nyamuk dan manusia.",
+                "answerOptions": [
+                    {"text": "Mutualisme", "isCorrect": false, "rationale": "Mutualisme adalah hubungan yang saling menguntungkan bagi kedua belah pihak."},
+                    {"text": "Komensalisme", "isCorrect": false, "rationale": "Komensalisme adalah hubungan di mana satu pihak diuntungkan dan pihak lain tidak terpengaruh."},
+                    {"text": "Predasi", "isCorrect": false, "rationale": "Predasi adalah hubungan pemangsa dan mangsa."},
+                    {"text": "Kompetisi", "isCorrect": false, "rationale": "Kompetisi adalah persaingan untuk sumber daya."},
+                    {"text": "Parasitisme", "isCorrect": true, "rationale": "Parasitisme adalah hubungan di mana satu organisme (parasit) mendapat manfaat dari organisme lain (inang) dan inang dirugikan."}
+                ]
+            },
+            {
+                "question": "Di dalam rantai makanan, energi mengalir dari tingkat trofik yang lebih rendah ke tingkat trofik yang lebih tinggi. Mengapa jumlah energi yang ditransfer menurun di setiap tingkat?",
+                "hint": "Ingatlah hukum kedua termodinamika tentang hilangnya energi dalam bentuk panas.",
+                "answerOptions": [
+                    {"text": "Energi yang hilang selama respirasi dan metabolisme organisme.", "isCorrect": true, "rationale": "Sebagian besar energi yang dikonsumsi oleh organisme digunakan untuk aktivitas hidup dan hilang sebagai panas, sehingga hanya sebagian kecil yang tersedia untuk tingkat trofik berikutnya."},
+                    {"text": "Semua energi diubah menjadi biomassa.", "isCorrect": false, "rationale": "Tidak semua energi diubah menjadi biomassa; sebagian besar hilang selama transfer."},
+                    {"text": "Energi diciptakan oleh konsumen.", "isCorrect": false, "rationale": "Energi tidak dapat diciptakan atau dihancurkan, hanya ditransfer."},
+                    {"text": "Produsen tidak mampu mentransfer energi secara efisien.", "isCorrect": false, "rationale": "Efisiensi transfer energi yang rendah terjadi di setiap tingkat trofik, bukan hanya oleh produsen."},
+                    {"text": "Energi hanya bisa mengalir satu arah.", "isCorrect": false, "rationale": "Meskipun energi mengalir satu arah, ini tidak menjelaskan mengapa jumlahnya menurun di setiap tingkat trofik."}
+                ]
+            },
+            {
+                "question": "Proses biologi di mana tumbuhan hijau mengubah karbon dioksida dan air menjadi glukosa dengan bantuan energi matahari adalah...",
+                "hint": "Proses ini juga melepaskan oksigen ke atmosfer.",
+                "answerOptions": [
+                    {"text": "Respirasi", "isCorrect": false, "rationale": "Respirasi adalah proses pelepasan energi dari glukosa."},
+                    {"text": "Transpirasi", "isCorrect": false, "rationale": "Transpirasi adalah pelepasan uap air dari tumbuhan."},
+                    {"text": "Kondensasi", "isCorrect": false, "rationale": "Kondensasi adalah proses uap air menjadi cair."},
+                    {"text": "Fotosintesis", "isCorrect": true, "rationale": "Fotosintesis adalah proses di mana tumbuhan menggunakan energi cahaya untuk mensintesis makanan mereka sendiri dari karbon dioksida dan air."},
+                    {"text": "Dekomposisi", "isCorrect": false, "rationale": "Dekomposisi adalah penguraian materi organik mati oleh dekomposer."}
+                ]
+            },
+            {
+                "question": "Jika populasi kelinci di sebuah padang rumput menurun drastis karena penyakit, apa yang paling mungkin terjadi pada populasi rumput dan serigala (predator kelinci)?",
+                "hint": "Fokus pada hubungan sebab-akibat yang terjadi dari satu tingkat trofik ke tingkat lainnya.",
+                "answerOptions": [
+                    {"text": "Rumput menurun, serigala meningkat.", "isCorrect": false, "rationale": "Penurunan kelinci akan menyebabkan rumput tumbuh lebih banyak, dan serigala akan kekurangan makanan."},
+                    {"text": "Rumput meningkat, serigala menurun.", "isCorrect": true, "rationale": "Penurunan mangsa (kelinci) akan menyebabkan tekanan predasi pada rumput berkurang, sehingga rumput meningkat. Serigala akan kekurangan makanan dan populasinya menurun."},
+                    {"text": "Rumput dan serigala keduanya meningkat.", "isCorrect": false, "rationale": "Kedua populasi tidak akan meningkat karena ada hubungan langsung antara ketiganya."},
+                    {"text": "Rumput menurun, serigala tidak terpengaruh.", "isCorrect": false, "rationale": "Serigala sangat bergantung pada kelinci sebagai sumber makanan, jadi populasi mereka pasti akan terpengaruh."},
+                    {"text": "Rumput dan serigala keduanya menurun.", "isCorrect": false, "rationale": "Penurunan kelinci tidak akan menyebabkan penurunan pada rumput, melainkan sebaliknya."}
+                ]
+            },
+            {
+                "question": "Biomagnifikasi adalah proses peningkatan konsentrasi zat berbahaya di rantai makanan. Manakah dari pernyataan berikut yang paling akurat menggambarkan dampaknya?",
+                "hint": "Pikirkan tentang mengapa elang botak hampir punah karena pestisida DDT.",
+                "answerOptions": [
+                    {"text": "Hanya organisme di tingkat trofik terbawah yang terpengaruh.", "isCorrect": false, "rationale": "Biomagnifikasi memengaruhi organisme di tingkat trofik yang lebih tinggi, bukan hanya yang terbawah."},
+                    {"text": "Konsentrasi polutan akan menurun seiring dengan kenaikan tingkat trofik.", "isCorrect": false, "rationale": "Ini adalah kebalikan dari biomagnifikasi, di mana konsentrasi polutan justru meningkat."},
+                    {"text": "Organisme di tingkat trofik tertinggi, seperti predator puncak, menjadi yang paling rentan terhadap efek polutan.", "isCorrect": true, "rationale": "Benar. Karena biomagnifikasi, predator puncak mengkonsumsi polutan dari semua tingkat trofik di bawahnya, menyebabkan akumulasi tertinggi."},
+                    {"text": "Proses ini hanya terjadi di lingkungan air.", "isCorrect": false, "rationale": "Biomagnifikasi dapat terjadi di lingkungan air dan darat."},
+                    {"text": "Proses ini membuat polutan menjadi tidak berbahaya lagi.", "isCorrect": false, "rationale": "Biomagnifikasi justru membuat polutan lebih berbahaya karena konsentrasinya meningkat."}
+                ]
+            },
+            {
+                "question": "Apa yang paling tepat menjelaskan mengapa deforestasi dapat mengganggu siklus karbon?",
+                "hint": "Pikirkan tentang peran pohon dalam fotosintesis.",
+                "answerOptions": [
+                    {"text": "Deforestasi menyebabkan peningkatan penyerapan karbon dioksida oleh tanah.", "isCorrect": false, "rationale": "Deforestasi justru mengurangi penyerapan karbon dioksida karena tidak ada tumbuhan yang menyerapnya."},
+                    {"text": "Hutan yang ditebang melepaskan oksigen dalam jumlah besar ke atmosfer.", "isCorrect": false, "rationale": "Hutan menghasilkan oksigen melalui fotosintesis. Deforestasi menghentikan proses ini, bukan melepaskan oksigen."},
+                    {"text": "Meningkatkan kemampuan atmosfer untuk menyimpan karbon dioksida.", "isCorrect": false, "rationale": "Atmosfer dapat menyimpan karbon, tetapi deforestasi mengganggu keseimbangan dengan mengurangi penyerapan."},
+                    {"text": "Mengurangi jumlah tumbuhan yang dapat menyerap karbon dioksida dari atmosfer melalui fotosintesis.", "isCorrect": true, "rationale": "Benar. Pohon dan tumbuhan adalah 'penyerap' (sink) karbon dioksida utama di Bumi, sehingga penebangan mereka mengurangi kemampuan ekosistem untuk mengatur CO2."},
+                    {"text": "Mengakibatkan hujan asam yang merusak siklus air.", "isCorrect": false, "rationale": "Hujan asam disebabkan oleh emisi sulfur dioksida dan nitrogen oksida, bukan deforestasi secara langsung."}
+                ]
+            },
+            {
+                "question": "Sebuah spesies tanaman memiliki akar yang panjang dan sistem perakaran yang menyebar luas, serta daun yang kecil dan berdaging. Ini adalah contoh adaptasi yang memungkinkannya bertahan hidup di lingkungan...",
+                "hint": "Pikirkan tentang kondisi lingkungan yang sangat kering.",
+                "answerOptions": [
+                    {"text": "Hutan hujan tropis", "isCorrect": false, "rationale": "Tanaman di hutan hujan tropis biasanya memiliki daun lebar untuk menangkap banyak cahaya."},
+                    {"text": "Kutub", "isCorrect": false, "rationale": "Tanaman di kutub biasanya berukuran kecil dan memiliki siklus hidup yang cepat."},
+                    {"text": "Gurun", "isCorrect": true, "rationale": "Akar yang panjang untuk mencari air dan daun berdaging untuk menyimpan air adalah adaptasi khas tanaman di lingkungan gurun yang kering."},
+                    {"text": "Rawa", "isCorrect": false, "rationale": "Tanaman di rawa memiliki adaptasi untuk bertahan di lingkungan yang terendam air."},
+                    {"text": "Pegunungan", "isCorrect": false, "rationale": "Tanaman di pegunungan memiliki adaptasi terhadap suhu rendah dan angin kencang."}
+                ]
+            },
+            {
+                "question": "Manakah pernyataan yang paling akurat membedakan jaring-jaring makanan dari rantai makanan?",
+                "hint": "Pikirkan tentang 'jaring' versus 'rantai' dan implikasinya pada kompleksitas.",
+                "answerOptions": [
+                    {"text": "Rantai makanan lebih kompleks daripada jaring-jaring makanan.", "isCorrect": false, "rationale": "Ini adalah kebalikan dari kenyataan. Jaring-jaring makanan adalah serangkaian rantai makanan yang saling berhubungan."},
+                    {"text": "Jaring-jaring makanan menunjukkan aliran energi yang lebih sederhana dan linier.", "isCorrect": false, "rationale": "Ini adalah deskripsi dari rantai makanan."},
+                    {"text": "Rantai makanan hanya melibatkan konsumen, sedangkan jaring-jaring makanan melibatkan produsen dan dekomposer.", "isCorrect": false, "rationale": "Keduanya melibatkan produsen, konsumen, dan dekomposer."},
+                    {"text": "Jaring-jaring makanan menggambarkan hubungan makan-dimakan yang lebih realistis dan kompleks, di mana satu spesies dapat memiliki banyak sumber makanan dan banyak predator.", "isCorrect": true, "rationale": "Benar. Jaring-jaring makanan menunjukkan interkonektivitas dan keanekaragaman sumber makanan yang ada di alam, membuatnya lebih tangguh."},
+                    {"text": "Jaring-jaring makanan tidak terpengaruh oleh hilangnya satu spesies.", "isCorrect": false, "rationale": "Meskipun lebih tangguh, hilangnya satu spesies dalam jaring-jaring makanan tetap dapat memengaruhi sistem secara keseluruhan."}
+                ]
+            },
+            {
+                "question": "Apa yang terjadi pada populasi bakteri pengurai jika semua produsen dan konsumen di suatu ekosistem punah?",
+                "hint": "Pikirkan tentang sumber energi utama dekomposer.",
+                "answerOptions": [
+                    {"text": "Populasi bakteri pengurai akan menurun drastis karena kekurangan bahan makanan.", "isCorrect": true, "rationale": "Bakteri pengurai membutuhkan bahan organik mati dari produsen dan konsumen untuk mendapatkan energi, sehingga populasinya akan menurun tanpa sumber tersebut."},
+                    {"text": "Populasi bakteri pengurai akan meningkat karena mereka tidak memiliki predator.", "isCorrect": false, "rationale": "Populasi mereka akan menurun, bukan meningkat, karena sumber makanan utama mereka (materi organik) telah hilang."},
+                    {"text": "Populasi bakteri pengurai tidak akan terpengaruh.", "isCorrect": false, "rationale": "Populasi mereka akan terpengaruh secara signifikan karena sumber makanan mereka telah hilang."},
+                    {"text": "Populasi bakteri pengurai akan berubah menjadi produsen.", "isCorrect": false, "rationale": "Bakteri pengurai tidak dapat berubah menjadi produsen. Mereka memiliki peran yang berbeda dalam ekosistem."},
+                    {"text": "Populasi bakteri pengurai akan meningkat karena adanya materi organik yang melimpah.", "isCorrect": false, "rationale": "Materi organik akan melimpah sesaat, tetapi karena tidak ada produsen dan konsumen yang menghasilkan materi baru, populasi pengurai akan menurun."}
+                ]
+            },
+            {
+                "question": "Pencemaran suara dari lalu lintas dan industri dapat mengganggu komunikasi antara hewan, memengaruhi perilaku makan, dan reproduksi. Ini adalah contoh dari dampak...",
+                "hint": "Dampak ini berasal dari frekuensi dan intensitas suara yang tinggi.",
+                "answerOptions": [
+                    {"text": "Pencemaran udara", "isCorrect": false, "rationale": "Pencemaran udara disebabkan oleh gas dan partikel berbahaya di atmosfer, bukan suara."},
+                    {"text": "Pencemaran air", "isCorrect": false, "rationale": "Pencemaran air berkaitan dengan polutan di badan air, bukan suara."},
+                    {"text": "Pencemaran tanah", "isCorrect": false, "rationale": "Pencemaran tanah disebabkan oleh bahan kimia atau limbah padat di tanah."},
+                    {"text": "Pencemaran visual", "isCorrect": false, "rationale": "Pencemaran visual adalah gangguan estetika, bukan gangguan suara."},
+                    {"text": "Pencemaran suara", "isCorrect": true, "rationale": "Pencemaran suara adalah suara bising yang mengganggu keseimbangan ekologis dan kesehatan organisme."}
+                ]
+            },
+            {
+                "question": "Monyet yang memakan buah dari pohon, dan kemudian menyebarkan bijinya di tempat lain melalui feses mereka, merupakan contoh dari hubungan simbiosis...",
+                "hint": "Kedua organisme dalam hubungan ini sama-sama mendapatkan keuntungan.",
+                "answerOptions": [
+                    {"text": "Parasitisme", "isCorrect": false, "rationale": "Dalam hubungan ini, monyet dan pohon mendapatkan manfaat; bukan hubungan yang merugikan."},
+                    {"text": "Komensalisme", "isCorrect": false, "rationale": "Keduanya diuntungkan, bukan hanya satu pihak."},
+                    {"text": "Kompetisi", "isCorrect": false, "rationale": "Ini bukan hubungan persaingan."},
+                    {"text": "Mutualisme", "isCorrect": true, "rationale": "Benar. Monyet mendapatkan makanan, dan pohon mendapatkan keuntungan dari penyebaran biji di lokasi baru, sehingga kedua pihak diuntungkan."},
+                    {"text": "Predasi", "isCorrect": false, "rationale": "Ini bukan hubungan pemangsa-mangsa."}
+                ]
+            },
+            {
+                "question": "Apa yang paling tepat menjelaskan suksesi sekunder?",
+                "hint": "Fokus pada apakah ada tanah atau kehidupan yang tersisa setelah suatu gangguan.",
+                "answerOptions": [
+                    {"text": "Proses pembentukan komunitas biologi di area yang sebelumnya tidak pernah ada kehidupan.", "isCorrect": false, "rationale": "Ini adalah definisi dari suksesi primer."},
+                    {"text": "Proses pemulihan ekosistem di area yang pernah ada kehidupan, tetapi terganggu oleh peristiwa alam atau manusia.", "isCorrect": true, "rationale": "Benar. Suksesi sekunder dimulai di area yang tanahnya sudah ada, seperti hutan bekas terbakar atau lahan pertanian yang ditinggalkan."},
+                    {"text": "Proses di mana organisme beradaptasi dengan lingkungan baru dalam siklus hidup mereka.", "isCorrect": false, "rationale": "Ini adalah adaptasi, bukan suksesi ekologis."},
+                    {"text": "Proses penumpukan polutan di rantai makanan.", "isCorrect": false, "rationale": "Ini adalah biomagnifikasi."},
+                    {"text": "Proses peningkatan keanekaragaman hayati secara tiba-tiba.", "isCorrect": false, "rationale": "Peningkatan keanekaragaman hayati adalah salah satu hasil dari suksesi, tetapi bukan definisinya."}
+                ]
+            },
+            {
+                "question": "Upaya konservasi secara in-situ adalah...",
+                "hint": "Pikirkan 'in-situ' sebagai 'di lokasi'.",
+                "answerOptions": [
+                    {"text": "Penyimpanan spesies di bank gen.", "isCorrect": false, "rationale": "Ini adalah contoh konservasi ex-situ (di luar habitat aslinya)."},
+                    {"text": "Melindungi spesies di habitat alami mereka.", "isCorrect": true, "rationale": "In-situ berarti 'di tempat aslinya', seperti di taman nasional atau cagar alam."},
+                    {"text": "Pembangunan kebun raya untuk melestarikan tumbuhan.", "isCorrect": false, "rationale": "Kebun raya adalah contoh konservasi ex-situ."},
+                    {"text": "Penangkaran hewan di kebun binatang.", "isCorrect": false, "rationale": "Penangkaran di kebun binatang adalah contoh konservasi ex-situ."},
+                    {"text": "Mencangkok tumbuhan langka di laboratorium.", "isCorrect": false, "rationale": "Ini adalah teknik reproduksi yang dilakukan di luar habitat aslinya, tergolong ex-situ."}
+                ]
+            },
+            {
+                "question": "Suhu adalah salah satu komponen abiotik yang dapat memengaruhi ekosistem. Bagaimana suhu yang ekstrem, baik panas maupun dingin, memengaruhi makhluk hidup?",
+                "hint": "Pikirkan tentang mengapa beruang berhibernasi dan mengapa kadal berjemur di bawah sinar matahari.",
+                "answerOptions": [
+                    {"text": "Hanya memengaruhi tumbuhan, bukan hewan.", "isCorrect": false, "rationale": "Suhu memengaruhi laju metabolisme semua organisme, baik tumbuhan maupun hewan."},
+                    {"text": "Mempercepat laju pertumbuhan semua spesies di ekosistem.", "isCorrect": false, "rationale": "Suhu yang ekstrem, baik panas maupun dingin, seringkali memperlambat atau menghentikan pertumbuhan dan metabolisme."},
+                    {"text": "Memengaruhi laju metabolisme dan aktivitas enzimatik, yang dapat mengganggu pertumbuhan dan kelangsungan hidup organisme.", "isCorrect": true, "rationale": "Benar. Suhu yang tidak ideal dapat menyebabkan enzim tidak berfungsi, mengganggu proses biologi dasar seperti pencernaan, respirasi, dan reproduksi."},
+                    {"text": "Tidak memiliki efek signifikan pada ekosistem karena makhluk hidup dapat beradaptasi dengan cepat.", "isCorrect": false, "rationale": "Adaptasi membutuhkan waktu, dan suhu ekstrem dapat menyebabkan stres atau bahkan kematian sebelum adaptasi terjadi."},
+                    {"text": "Hanya memengaruhi hewan berdarah panas, bukan hewan berdarah dingin.", "isCorrect": false, "rationale": "Suhu lingkungan sangat memengaruhi hewan berdarah dingin karena mereka tidak dapat mengatur suhu tubuhnya sendiri."}
+                ]
+            }
+        ]
+    };
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let userName = '';
+    let userClass = '';
+    let timerId;
+    const TIME_LIMIT = 10;
+    const questionOrder = Array.from({ length: quizData.questions.length }, (_, i) => i);
+
+    const startScreen = document.getElementById('start-screen');
+    const quizContent = document.getElementById('quiz-content');
+    const resultsScreen = document.getElementById('results-screen');
+    const startBtn = document.getElementById('start-btn');
+    const studentNameInput = document.getElementById('student-name');
+    const studentClassSelect = document.getElementById('student-class');
+    const questionCounter = document.getElementById('question-counter');
+    const timerDisplay = document.getElementById('timer-display');
+    const timerProgress = document.getElementById('timer-progress');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const nextBtn = document.getElementById('next-btn');
+    const studentInfoDisplay = document.getElementById('student-info');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const scoreTextDisplay = document.getElementById('score-text');
+    const reviewContainer = document.getElementById('review-container');
+
+    // Acak soal secara acak setiap kali kuis dimulai
+    questionOrder.sort(() => Math.random() - 0.5);
+
+    // Aktifkan tombol "Mulai Kuis" jika nama dan kelas sudah diisi
+    function checkFormValidity() {
+        if (studentNameInput.value.trim() !== '' && studentClassSelect.value !== '') {
+            startBtn.disabled = false;
+        } else {
+            startBtn.disabled = true;
+        }
+    }
+    studentNameInput.addEventListener('input', checkFormValidity);
+    studentClassSelect.addEventListener('change', checkFormValidity);
+
+    function startTimer() {
+        let timeLeft = TIME_LIMIT;
+        timerDisplay.textContent = timeLeft;
+        timerProgress.style.width = '100%';
+        timerProgress.style.backgroundColor = '#84cc16';
+
+        timerId = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            timerProgress.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+            if (timeLeft <= 3) {
+                timerProgress.style.backgroundColor = '#ef4444';
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                // Jawaban otomatis salah jika waktu habis
+                recordAnswer(false);
+                nextQuestion();
+            }
+        }, 1000);
+    }
+
+    function showQuestion() {
+        if (currentQuestionIndex < questionOrder.length) {
+            const questionIndex = questionOrder[currentQuestionIndex];
+            const q = quizData.questions[questionIndex];
+            
+            questionCounter.textContent = `Soal ${currentQuestionIndex + 1}/${quizData.questions.length}`;
+            questionText.textContent = q.question;
+            optionsContainer.innerHTML = '';
+            
+            q.answerOptions.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option-item';
+                optionDiv.textContent = `${String.fromCharCode(65 + index)}. ${option.text}`;
+                optionDiv.onclick = () => selectOption(optionDiv, option.isCorrect);
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            nextBtn.classList.add('hidden');
+            startTimer();
+        } else {
+            showResults();
+        }
+    }
+
+    function selectOption(selectedDiv, isCorrect) {
+        clearInterval(timerId);
+        
+        // Nonaktifkan semua opsi setelah satu dipilih
+        Array.from(optionsContainer.children).forEach(div => {
+            div.style.pointerEvents = 'none';
+        });
+
+        // Tandai opsi yang dipilih
+        selectedDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+        
+        recordAnswer(isCorrect);
+        // nextBtn.classList.remove('hidden'); // Hilangkan tombol ini karena navigasi otomatis
+        nextQuestion();
+    }
+
+    function recordAnswer(isCorrect) {
+        if (isCorrect) {
+            score++;
+        }
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        // Beri sedikit jeda sebelum menampilkan soal berikutnya
+        setTimeout(() => {
+            showQuestion();
+        }, 500);
+    }
+
+    function showResults() {
+        quizContent.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+
+        studentInfoDisplay.textContent = `Nama: ${userName} | Kelas: ${userClass}`;
+        const totalQuestions = quizData.questions.length;
+        finalScoreDisplay.textContent = `${score}/${totalQuestions}`;
+        
+        let scoreMessage = '';
+        let motivationalMessage = '';
+
+        if (score >= 12) {
+            scoreMessage = 'Hasil yang sangat baik!';
+            motivationalMessage = 'Selamat, kamu memiliki pemahaman yang kuat tentang materi ini! Pertahankan semangat belajarmu, karena kamu sudah berada di jalur yang benar. Teruslah membaca dan mencari tahu hal-hal baru untuk mengasah kemampuanmu.';
+        } else if (score >= 8) {
+            scoreMessage = 'Cukup bagus!';
+            motivationalMessage = 'Kerja bagus, kamu sudah memiliki fondasi yang kuat. Sedikit lagi, kamu pasti bisa menguasai materi ini sepenuhnya. Jangan takut untuk mengulang materi yang belum kamu kuasai, karena setiap usaha akan membuahkan hasil.';
+        } else {
+            scoreMessage = 'Jangan menyerah!';
+            motivationalMessage = 'Ini hanyalah awal. Setiap kesalahan adalah kesempatan untuk belajar. Ayo tingkatkan lagi belajarmu dengan lebih fokus. Ingat, yang terpenting adalah proses belajar itu sendiri. Kamu pasti bisa!';
+        }
+        scoreTextDisplay.textContent = scoreMessage;
+        reviewContainer.querySelector('#feedback-text').textContent = motivationalMessage;
+    }
+
+    startBtn.addEventListener('click', () => {
+        userName = studentNameInput.value.trim();
+        userClass = studentClassSelect.value;
+        if (userName === '' || userClass === '') {
+            return; // Jangan mulai jika input kosong
+        }
+        startScreen.classList.add('hidden');
+        quizContent.classList.remove('hidden');
+        showQuestion();
+    });
+
+    // Inisialisasi tampilan
+    window.onload = function() {
+        startScreen.classList.remove('hidden');
+        quizContent.classList.add('hidden');
+        resultsScreen.classList.add('hidden');
+    };
+</script>
+
+</body>
+</html>
