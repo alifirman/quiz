@@ -1,3 +1,438 @@
-<html>
-  
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Hidrokarbon Interaktif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 900px;
+            padding: 2rem;
+            margin: auto;
+        }
+        .quiz-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+            text-align: center;
+        }
+        .timer-bar {
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            margin-top: 1rem;
+        }
+        .timer-progress {
+            height: 100%;
+            background-color: #84cc16;
+            width: 100%;
+            transition: width linear;
+            border-radius: 9999px;
+        }
+        .timer-text {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .option-item {
+            cursor: pointer;
+            background-color: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: left;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+        .option-item:hover {
+            border-color: #65a30d;
+        }
+        .option-item.selected {
+            background-color: #d1fae5;
+            border-color: #4b901a;
+        }
+        .option-item.correct {
+            background-color: #d1fae5;
+            border-color: #059669;
+        }
+        .option-item.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+        .next-btn {
+            background-color: #84cc16;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            margin-top: 1rem;
+        }
+        .next-btn:hover:not(:disabled) {
+            background-color: #65a30d;
+        }
+        .next-btn:disabled {
+            background-color: #d1fae5;
+            cursor: not-allowed;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .form-group label {
+            font-weight: 500;
+            color: #4b5563;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            margin-top: 0.5rem;
+        }
+        .leaderboard-item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.5rem 0;
+        }
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="p-6">
+
+<div id="quiz-container" class="container">
+    <div id="start-screen" class="quiz-card">
+        <h1 class="text-3xl font-bold mb-4">Kuis Hidrokarbon</h1>
+        <p class="mb-6 text-gray-600">Jawab 15 soal tentang hidrokarbon. Nama dan kelas akan digunakan untuk papan peringkat.</p>
+        
+        <div class="form-group">
+            <label for="student-name">Nama Lengkap</label>
+            <input type="text" id="student-name" placeholder="Masukkan nama Anda..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <div class="form-group">
+            <label for="student-class">Kelas</label>
+            <input type="text" id="student-class" placeholder="Masukkan kelas Anda..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+        </div>
+        <button id="start-btn" class="next-btn w-full mt-4" disabled>Mulai Kuis</button>
+    </div>
+
+    <div id="quiz-content" class="quiz-card hidden">
+        <div class="flex justify-between items-center mb-4">
+            <span id="question-counter" class="text-lg font-semibold text-gray-500">Soal 1/15</span>
+            <div class="flex items-center">
+                <span id="timer-display" class="timer-text mr-2">25</span>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-gray-500">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+        <div class="timer-bar">
+            <div id="timer-progress" class="timer-progress"></div>
+        </div>
+        
+        <h2 id="question-text" class="text-2xl font-semibold mt-6 mb-4"></h2>
+        <div id="options-container" class="flex flex-col mt-4"></div>
+        
+        <button id="next-btn" class="next-btn w-full hidden">Soal Selanjutnya</button>
+    </div>
+
+    <div id="results-screen" class="quiz-card hidden">
+        <h2 class="text-3xl font-bold mb-2">Hasil Kuis</h2>
+        <p id="student-info" class="text-lg text-gray-600 mb-4"></p>
+        <p id="final-score" class="text-5xl font-extrabold mb-4"></p>
+        <p id="score-text" class="text-xl mb-6"></p>
+
+        <div class="bg-gray-100 p-6 rounded-xl mt-8">
+            <h3 class="text-2xl font-bold mb-4">Peringkat Skor Terbaik</h3>
+            <p id="leaderboard-status" class="text-center text-gray-500">Memuat peringkat...</p>
+            <div id="leaderboard" class="mt-4"></div>
+        </div>
+
+        <button onclick="window.location.reload()" class="next-btn mt-6">Coba Lagi</button>
+    </div>
+</div>
+
+<script type="module">
+    // Import modul Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, limit, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    
+    // Data Kuis dari file .md yang disediakan
+    const quizData = {
+        "Lk": [
+            { "gua": 0, "question": "Senyawa hidrokarbon berikut yang memiliki ikatan rangkap dua adalah...", "hint": "Ingat kembali ciri khas senyawa alkena.", "wA": [{ "text": "Propana", "Zo": false, "OQa": "Propana adalah alkana, yang hanya memiliki ikatan tunggal." }, { "text": "Etuna", "Zo": false, "OQa": "Etuna adalah alkuna, yang memiliki ikatan rangkap tiga." }, { "text": "Butana", "Zo": false, "OQa": "Butana adalah alkana, yang hanya memiliki ikatan tunggal." }, { "text": "Pentena", "Zo": true, "OQa": "Pentena adalah alkena, yang memiliki ikatan rangkap dua." }] },
+            { "gua": 0, "question": "Senyawa dengan rumus molekul C5H12 memiliki nama IUPAC...", "hint": "Perhatikan jumlah atom karbon dan rumus umum untuk alkana.", "wA": [{ "text": "Pentena", "Zo": false, "OQa": "Pentena memiliki rumus C5H10." }, { "text": "Propuna", "Zo": false, "OQa": "Propuna memiliki rumus C3H4." }, { "text": "Pentana", "Zo": true, "OQa": "Pentana adalah alkana dengan 5 atom karbon yang sesuai dengan rumus C5H12." }, { "text": "Butana", "Zo": false, "OQa": "Butana adalah alkana dengan 4 atom karbon, bukan 5." }] },
+            { "gua": 0, "question": "Apa nama senyawa dengan struktur CH3-CH2-CH2-CH=CH2?", "hint": "Identifikasi jenis senyawa dan nomor rantai utama dari ujung yang paling dekat dengan ikatan rangkap.", "wA": [{ "text": "1-Pentena", "Zo": true, "OQa": "Senyawa ini adalah rantai lurus 5 karbon dengan ikatan rangkap dua pada posisi pertama, sehingga namanya adalah 1-pentena." }, { "text": "Pentana", "Zo": false, "OQa": "Ini bukan alkana karena memiliki ikatan rangkap dua." }, { "text": "3-Pentena", "Zo": false, "OQa": "Penomoran rantai utama dimulai dari ujung terdekat dengan ikatan rangkap, sehingga posisinya adalah 1, bukan 3." }, { "text": "2-Pentuna", "Zo": false, "OQa": "Senyawa ini memiliki ikatan rangkap dua, bukan rangkap tiga, sehingga bukan pentuna." }] },
+            { "gua": 0, "question": "Reaksi antara etena (CH2=CH2) dengan HBr akan menghasilkan...", "hint": "Reaksi adisi akan memutus ikatan rangkap dan menambahkan atom atau gugus atom baru.", "wA": [{ "text": "Etana", "Zo": false, "OQa": "Etana adalah produk adisi hidrogen, bukan hidrogen bromida." }, { "text": "Bromoetana", "Zo": true, "OQa": "Reaksi adisi HBr pada ikatan rangkap etena akan menghasilkan bromoetana." }, { "text": "1,2-Dibromoetana", "Zo": false, "OQa": "1,2-Dibromoetana adalah produk adisi bromin (Br2)." }, { "text": "Etena dan HBr", "Zo": false, "OQa": "Ini adalah reaktan, bukan produk dari reaksi adisi." }] },
+            { "gua": 0, "question": "Senyawa hidrokarbon jenuh adalah...", "hint": "Hidrokarbon jenuh adalah hidrokarbon yang tidak memiliki ikatan rangkap atau rangkap tiga.", "wA": [{ "text": "Alkena", "Zo": false, "OQa": "Alkena memiliki ikatan rangkap dua sehingga termasuk hidrokarbon tak jenuh." }, { "text": "Alkuna", "Zo": false, "OQa": "Alkuna memiliki ikatan rangkap tiga sehingga termasuk hidrokarbon tak jenuh." }, { "text": "Alkana", "Zo": true, "OQa": "Alkana adalah hidrokarbon jenuh karena hanya memiliki ikatan tunggal karbon-karbon." }, { "text": "Semua jawaban benar", "Zo": false, "OQa": "Hanya alkana yang merupakan hidrokarbon jenuh." }] },
+            { "gua": 0, "question": "Berapakah jumlah isomer posisi yang dimiliki oleh C4H8?", "hint": "Gambar struktur rantai lurusnya dan ubah posisi ikatan rangkapnya.", "wA": [{ "text": "Satu", "Zo": false, "OQa": "C4H8 memiliki lebih dari satu isomer posisi." }, { "text": "Dua", "Zo": true, "OQa": "C4H8 memiliki dua isomer posisi ikatan rangkap, yaitu 1-butena dan 2-butena." }, { "text": "Tiga", "Zo": false, "OQa": "Selain butena, C4H8 juga bisa membentuk siklobutana dan metilsiklopropana, yang merupakan isomer struktur." }, { "text": "Empat", "Zo": false, "OQa": "Jumlah isomer posisi untuk C4H8 adalah dua." }] },
+            { "gua": 0, "question": "Reaksi yang mengubah alkana menjadi alkena adalah...", "hint": "Pikirkan proses yang menghilangkan atom atau gugus atom dari alkana untuk membentuk ikatan rangkap.", "wA": [{ "text": "Adisi", "Zo": false, "OQa": "Adisi adalah reaksi pemutusan ikatan rangkap, bukan pembentukannya." }, { "text": "Substitusi", "Zo": false, "OQa": "Substitusi adalah penggantian atom tanpa mengubah jenis ikatan." }, { "text": "Polimerisasi", "Zo": false, "OQa": "Polimerisasi adalah penggabungan monomer menjadi polimer." }, { "text": "Eliminasi", "Zo": true, "OQa": "Reaksi eliminasi adalah kebalikan dari adisi, di mana ikatan tunggal diubah menjadi ikatan rangkap dengan melepaskan molekul kecil." }] },
+            { "gua": 0, "question": "Senyawa yang dapat mengalami reaksi adisi adalah...", "hint": "Reaksi adisi hanya terjadi pada senyawa hidrokarbon tak jenuh.", "wA": [{ "text": "Propana", "Zo": false, "OQa": "Propana adalah alkana (hidrokarbon jenuh) yang umumnya mengalami reaksi substitusi." }, { "text": "Pentana", "Zo": false, "OQa": "Pentana adalah alkana (hidrokarbon jenuh) yang umumnya mengalami reaksi substitusi." }, { "text": "Butana", "Zo": false, "OQa": "Butana adalah alkana (hidrokarbon jenuh) yang umumnya mengalami reaksi substitusi." }, { "text": "Propena", "Zo": true, "OQa": "Propena adalah alkena yang memiliki ikatan rangkap, sehingga dapat mengalami reaksi adisi." }] },
+            { "gua": 0, "question": "Manakah di antara rumus molekul berikut yang merupakan alkuna?", "hint": "Ingat kembali rumus umum untuk alkuna.", "wA": [{ "text": "C5H12", "Zo": false, "OQa": "C5H12 adalah rumus umum alkana, CnH(2n+2)." }, { "text": "C4H8", "Zo": false, "OQa": "C4H8 adalah rumus umum alkena, CnH(2n)." }, { "text": "C6H10", "Zo": true, "OQa": "C6H10 adalah rumus umum alkuna, CnH(2n-2)." }, { "text": "C7H16", "Zo": false, "OQa": "C7H16 adalah rumus umum alkana, CnH(2n+2)." }] },
+            { "gua": 0, "question": "Senyawa dengan nama 2-metilpropana adalah isomer dari...", "hint": "Tentukan rumus molekul dari 2-metilpropana dan cari senyawa lain dengan rumus molekul yang sama.", "wA": [{ "text": "Butena", "Zo": false, "OQa": "Butena adalah alkena, bukan isomer butana." }, { "text": "Butana", "Zo": true, "OQa": "2-metilpropana dan butana memiliki rumus molekul yang sama (C4H10) tetapi struktur yang berbeda, sehingga keduanya adalah isomer." }, { "text": "Pentana", "Zo": false, "OQa": "Pentana memiliki 5 atom karbon, sedangkan 2-metilpropana memiliki 4 atom karbon." }, { "text": "Propana", "Zo": false, "OQa": "Propana memiliki 3 atom karbon, sedangkan 2-metilpropana memiliki 4 atom karbon." }] },
+            { "gua": 0, "question": "Jika propena (CH3-CH=CH2) direaksikan dengan H2O dengan bantuan katalis, produk utama yang terbentuk adalah...", "hint": "Pikirkan tentang aturan Markovnikov untuk reaksi adisi pada alkena asimetris.", "wA": [{ "text": "1-propanol", "Zo": false, "OQa": "Menurut aturan Markovnikov, atom H dari H2O akan berikatan dengan atom C yang memiliki lebih banyak atom H, dan gugus OH akan berikatan dengan atom C yang lebih tersubstitusi, menghasilkan 2-propanol." }, { "text": "2-propanol", "Zo": true, "OQa": "Sesuai aturan Markovnikov, H2O akan mengadisi propena untuk menghasilkan 2-propanol sebagai produk utama." }, { "text": "Propanal", "Zo": false, "OQa": "Propanal adalah aldehida, bukan produk dari reaksi adisi ini." }, { "text": "Propana", "Zo": false, "OQa": "Propana adalah produk dari adisi hidrogen (H2)." }] },
+            { "gua": 0, "question": "Senyawa mana yang paling reaktif terhadap reaksi adisi?", "hint": "Reaksi adisi terjadi pada senyawa hidrokarbon tak jenuh.", "wA": [{ "text": "Propana", "Zo": false, "OQa": "Propana adalah alkana yang jenuh dan kurang reaktif terhadap adisi." }, { "text": "Propena", "Zo": true, "OQa": "Propena memiliki ikatan rangkap dua, yang lebih reaktif daripada ikatan tunggal." }, { "text": "Pentana", "Zo": false, "OQa": "Pentana adalah alkana yang jenuh dan kurang reaktif terhadap adisi." }, { "text": "Heksana", "Zo": false, "OQa": "Heksana adalah alkana yang jenuh dan kurang reaktif terhadap adisi." }] },
+            { "gua": 0, "question": "Reaksi adisi pada etuna (CHCH) dengan 2 molekul H2 akan menghasilkan...", "hint": "Pikirkan berapa banyak molekul hidrogen yang diperlukan untuk menjenuhkan ikatan rangkap tiga.", "wA": [{ "text": "Etena", "Zo": false, "OQa": "Etena adalah produk adisi satu molekul H2, bukan dua." }, { "text": "Etana", "Zo": true, "OQa": "Etuna memiliki ikatan rangkap tiga dan akan mengadisi dua molekul H2 untuk menjadi alkana jenuh, yaitu etana." }, { "text": "Asetilena", "Zo": false, "OQa": "Asetilena adalah nama lain dari etuna, bukan produk reaksi." }, { "text": "Propana", "Zo": false, "OQa": "Propana adalah alkana dengan tiga atom karbon, bukan produk dari etuna." }] },
+            { "gua": 0, "question": "Senyawa yang paling sedikit memiliki hidrogen per atom karbonnya adalah...", "hint": "Hubungan antara jumlah ikatan rangkap/rangkap tiga dengan jumlah atom hidrogen.", "wA": [{ "text": "Alkana", "Zo": false, "OQa": "Alkana memiliki jumlah atom hidrogen terbanyak per atom karbon." }, { "text": "Alkena", "Zo": false, "OQa": "Alkena memiliki lebih banyak atom hidrogen per atom karbon dibandingkan alkuna." }, { "text": "Alkuna", "Zo": true, "OQa": "Alkuna memiliki ikatan rangkap tiga, sehingga jumlah atom hidrogennya paling sedikit dibandingkan alkana dan alkena." }, { "text": "Hidrokarbon jenuh", "Zo": false, "OQa": "Hidrokarbon jenuh (alkana) memiliki jumlah hidrogen maksimum." }] },
+            { "gua": 0, "question": "Manakah pernyataan yang benar tentang reaksi adisi?", "hint": "Ciri khas dari reaksi adisi adalah perubahan jenis ikatan pada molekul.", "wA": [{ "text": "Reaksi ini hanya terjadi pada alkana.", "Zo": false, "OQa": "Reaksi adisi hanya terjadi pada hidrokarbon tak jenuh (alkena dan alkuna)." }, { "text": "Reaksi ini mengubah ikatan tunggal menjadi ikatan rangkap.", "Zo": false, "OQa": "Reaksi ini mengubah ikatan rangkap menjadi ikatan tunggal." }, { "text": "Reaksi ini memutus ikatan rangkap atau rangkap tiga.", "Zo": true, "OQa": "Reaksi adisi ditandai dengan pemutusan ikatan rangkap atau rangkap tiga dan penambahan atom pada setiap atom karbon yang berikatan rangkap." }, { "text": "Produk utama dari reaksi ini adalah air.","Zo": false, "OQa": "Produk utama bervariasi tergantung pada reagen yang digunakan, misalnya haloalkana, alkohol, atau alkana, bukan hanya air." }] }
+        ], "Tl": 14
+    };
+    
+    let db, auth;
+    let userId;
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let userName = '';
+    let userClass = '';
+    let timerId;
+    const TIME_LIMIT = 25;
+    const questionOrder = Array.from({ length: quizData.Lk.length }, (_, i) => i);
+    let quizActive = false;
+    let isInitialized = false;
+
+    // Elemen DOM
+    const startScreen = document.getElementById('start-screen');
+    const quizContent = document.getElementById('quiz-content');
+    const resultsScreen = document.getElementById('results-screen');
+    const startBtn = document.getElementById('start-btn');
+    const studentNameInput = document.getElementById('student-name');
+    const studentClassInput = document.getElementById('student-class');
+    const questionCounter = document.getElementById('question-counter');
+    const timerDisplay = document.getElementById('timer-display');
+    const timerProgress = document.getElementById('timer-progress');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const studentInfoDisplay = document.getElementById('student-info');
+    const finalScoreDisplay = document.getElementById('final-score');
+    const scoreTextDisplay = document.getElementById('score-text');
+    const leaderboardContainer = document.getElementById('leaderboard');
+    const leaderboardStatus = document.getElementById('leaderboard-status');
+    const app_id = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+    // Inisialisasi Firebase
+    async function initializeFirebase() {
+        if (isInitialized) return;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            isInitialized = true;
+            console.log("Firebase initialized.");
+            
+            // Atur pendengar status autentikasi
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    console.log("User authenticated:", userId);
+                    listenToLeaderboard();
+                } else {
+                    console.log("User not authenticated. Signing in anonymously.");
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            leaderboardStatus.textContent = "Gagal memuat peringkat.";
+        }
+    }
+    initializeFirebase();
+
+    // Dapatkan data leaderboard secara real-time
+    function listenToLeaderboard() {
+        try {
+            const leaderboardRef = collection(db, `artifacts/${app_id}/public/data/highscores`);
+            const q = query(leaderboardRef, orderBy("score", "desc"), limit(10));
+            onSnapshot(q, (snapshot) => {
+                const scores = [];
+                snapshot.forEach(doc => {
+                    scores.push(doc.data());
+                });
+                renderLeaderboard(scores);
+            }, (error) => {
+                console.error("Error listening to leaderboard:", error);
+                leaderboardStatus.textContent = "Gagal memuat peringkat. Periksa koneksi atau izin.";
+            });
+        } catch (error) {
+            console.error("Error setting up leaderboard listener:", error);
+        }
+    }
+
+    // Tampilkan data leaderboard
+    function renderLeaderboard(scores) {
+        if (scores.length === 0) {
+            leaderboardStatus.textContent = "Belum ada skor yang tercatat.";
+            return;
+        }
+        leaderboardStatus.classList.add('hidden');
+        leaderboardContainer.innerHTML = '';
+        scores.forEach((item, index) => {
+            const rank = index + 1;
+            const rankText = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${rank}`;
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'leaderboard-item flex justify-between items-center';
+            scoreItem.innerHTML = `
+                <div class="flex items-center">
+                    <span class="font-bold text-xl mr-2">${rankText}</span>
+                    <span class="font-medium">${item.name} (${item.class})</span>
+                </div>
+                <span class="text-lg font-semibold text-green-700">${item.score}/${quizData.Lk.length}</span>
+            `;
+            leaderboardContainer.appendChild(scoreItem);
+        });
+    }
+
+    // Fungsi untuk menyimpan skor ke Firestore
+    async function saveScoreToFirestore() {
+        if (!userId) {
+            console.error("User ID is not available.");
+            return;
+        }
+        try {
+            const scoreDocRef = doc(db, `artifacts/${app_id}/public/data/highscores/${userId}`);
+            await setDoc(scoreDocRef, {
+                name: userName,
+                class: userClass,
+                score: score,
+                timestamp: new Date()
+            }, { merge: true });
+            console.log("Score saved successfully!");
+        } catch (error) {
+            console.error("Error saving score:", error);
+        }
+    }
+
+    // Acak soal setiap kali kuis dimulai
+    questionOrder.sort(() => Math.random() - 0.5);
+
+    // Aktifkan tombol "Mulai Kuis" jika nama dan kelas sudah diisi
+    function checkFormValidity() {
+        if (studentNameInput.value.trim() !== '' && studentClassInput.value.trim() !== '') {
+            startBtn.disabled = false;
+        } else {
+            startBtn.disabled = true;
+        }
+    }
+    studentNameInput.addEventListener('input', checkFormValidity);
+    studentClassInput.addEventListener('input', checkFormValidity);
+    
+    // Handler untuk tombol "Mulai Kuis"
+    startBtn.addEventListener('click', () => {
+        userName = studentNameInput.value.trim();
+        userClass = studentClassInput.value.trim();
+        if (userName && userClass) {
+            startScreen.classList.add('hidden');
+            quizContent.classList.remove('hidden');
+            quizActive = true;
+            showQuestion();
+        }
+    });
+
+    function startTimer() {
+        let timeLeft = TIME_LIMIT;
+        timerDisplay.textContent = timeLeft;
+        timerProgress.style.width = '100%';
+        timerProgress.style.backgroundColor = '#84cc16';
+        
+        timerId = setInterval(() => {
+            timeLeft--;
+            timerDisplay.textContent = timeLeft;
+            timerProgress.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
+            if (timeLeft <= 5) {
+                timerProgress.style.backgroundColor = '#ef4444';
+            }
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                // Jawaban otomatis salah jika waktu habis
+                recordAnswer(false);
+                nextQuestion();
+            }
+        }, 1000);
+    }
+
+    function showQuestion() {
+        if (currentQuestionIndex < questionOrder.length) {
+            const questionIndex = questionOrder[currentQuestionIndex];
+            const q = quizData.Lk[questionIndex];
+            
+            questionCounter.textContent = `Soal ${currentQuestionIndex + 1}/${quizData.Lk.length}`;
+            questionText.textContent = q.question;
+            optionsContainer.innerHTML = '';
+            
+            q.wA.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option-item';
+                optionDiv.textContent = `${String.fromCharCode(65 + index)}. ${option.text}`;
+                optionDiv.onclick = () => selectOption(optionDiv, option.Zo);
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            startTimer();
+        } else {
+            showResults();
+        }
+    }
+
+    function selectOption(selectedDiv, isCorrect) {
+        clearInterval(timerId);
+        
+        Array.from(optionsContainer.children).forEach(div => {
+            div.style.pointerEvents = 'none';
+        });
+
+        selectedDiv.classList.add(isCorrect ? 'correct' : 'incorrect');
+        
+        recordAnswer(isCorrect);
+        nextQuestion();
+    }
+
+    function recordAnswer(isCorrect) {
+        if (isCorrect) {
+            score++;
+        }
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        setTimeout(() => {
+            showQuestion();
+        }, 500);
+    }
+
+    function showResults() {
+        quizActive = false;
+        quizContent.classList.add('hidden');
+        resultsScreen.classList.remove('hidden');
+        saveScoreToFirestore();
+
+        studentInfoDisplay.textContent = `Nama: ${userName} | Kelas: ${userClass}`;
+        const totalQuestions = quizData.Lk.length;
+        finalScoreDisplay.textContent = `${score}/${totalQuestions}`;
+        
+        let scoreMessage = '';
+        if (score >= totalQuestions * 0.8) {
+            scoreMessage = 'Hasil yang sangat baik!';
+        } else if (score >= totalQuestions * 0.5) {
+            scoreMessage = 'Cukup bagus!';
+        } else {
+            scoreMessage = 'Teruslah berlatih!';
+        }
+        scoreTextDisplay.textContent = scoreMessage;
+    }
+</script>
+</body>
 </html>
