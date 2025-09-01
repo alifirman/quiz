@@ -134,7 +134,7 @@
         <div class="flex justify-between items-center mb-4">
             <span id="question-counter" class="text-lg font-semibold text-gray-500">Soal 1/15</span>
             <div class="flex items-center">
-                <span id="timer-display" class="timer-text mr-2">10</span>
+                <span id="timer-display" class="timer-text mr-2">20</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-gray-500">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -340,7 +340,7 @@
     let userName = '';
     let userClass = '';
     let timerId;
-    const TIME_LIMIT = 20;
+    const TIME_LIMIT = 20; // Batas waktu baru
     const questionOrder = Array.from({ length: quizData.questions.length }, (_, i) => i);
 
     const startScreen = document.getElementById('start-screen');
@@ -384,7 +384,7 @@
             timeLeft--;
             timerDisplay.textContent = timeLeft;
             timerProgress.style.width = (timeLeft / TIME_LIMIT) * 100 + '%';
-            if (timeLeft <= 3) {
+            if (timeLeft <= 5) {
                 timerProgress.style.backgroundColor = '#ef4444';
             }
 
