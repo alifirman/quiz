@@ -112,7 +112,7 @@
 <div id="quiz-container" class="container">
     <div id="start-screen" class="quiz-card">
         <h1 class="text-3xl font-bold mb-4">Kuis IPAS: Makhluk Hidup dan Lingkungannya</h1>
-        <p class="mb-6 text-gray-600">Jawab 15 soal berikut dalam waktu 10 detik per soal. Jika waktu habis, jawaban Anda akan dianggap salah secara otomatis dan soal akan berpindah.</p>
+        <p class="mb-6 text-gray-600">Jawab 15 soal berikut dalam waktu 20 detik per soal. Jika waktu habis, jawaban Anda akan dianggap salah secara otomatis dan soal akan berpindah.</p>
         
         <div class="form-group">
             <label for="student-name">Nama Lengkap</label>
@@ -340,7 +340,7 @@
     let userName = '';
     let userClass = '';
     let timerId;
-    const TIME_LIMIT = 10;
+    const TIME_LIMIT = 20;
     const questionOrder = Array.from({ length: quizData.questions.length }, (_, i) => i);
 
     const startScreen = document.getElementById('start-screen');
