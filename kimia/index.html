@@ -120,7 +120,9 @@
         </div>
         <div class="form-group">
             <label for="student-class">Kelas</label>
-            <input type="text" id="student-class" placeholder="Masukkan kelas Anda..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            <select id="student-class" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                <option value="XI A">XI A</option>
+            </select>
         </div>
         <button id="start-btn" class="next-btn w-full mt-4" disabled>Mulai Kuis</button>
     </div>
@@ -328,7 +330,7 @@
         }
     }
     studentNameInput.addEventListener('input', checkFormValidity);
-    studentClassInput.addEventListener('input', checkFormValidity);
+    studentClassInput.addEventListener('change', checkFormValidity);
     
     // Handler untuk tombol "Mulai Kuis"
     startBtn.addEventListener('click', () => {
