@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Lingkungan & Soal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        setLogLevel('Debug');
+
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let profileUnsubscribe = null;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timerId = null;
+        let randomizedSoal = [];
+        let timeRemaining = 15;
+        let isAnswered = false;
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // Data Soal (Total 50 soal)
+        const soalData = [
+            { "question": "Apa yang dimaksud dengan **lingkungan**?", "answers": [{"text": "Semua benda hidup di sekitar manusia.", "isCorrect": false}, {"text": "Semua makhluk hidup dan benda mati yang ada di bumi.", "isCorrect": false}, {"text": "Kesatuan ruang dengan semua benda, daya, keadaan, dan makhluk hidup, termasuk manusia dan perilakunya, yang mempengaruhi kelangsungan perikehidupan dan kesejahteraan manusia serta makhluk hidup lain.", "isCorrect": true}, {"text": "Hutan, sungai, dan laut saja.", "isCorrect": false}] },
+            { "question": "Komponen lingkungan yang terdiri dari benda-benda tak hidup disebut komponen...", "answers": [{"text": "Biotik", "isCorrect": false}, {"text": "Abiotik", "isCorrect": true}, {"text": "Ekosistem", "isCorrect": false}, {"text": "Populasi", "isCorrect": false}] },
+            { "question": "Berikut ini yang merupakan contoh dari komponen **biotik** adalah...", "answers": [{"text": "Tanah, air, dan udara", "isCorrect": false}, {"text": "Tumbuhan, hewan, dan mikroorganisme", "isCorrect": true}, {"text": "Suhu, kelembaban, dan curah hujan", "isCorrect": false}, {"text": "Cahaya matahari dan angin", "isCorrect": false}] },
+            { "question": "Interaksi antara komponen biotik dan abiotik dalam suatu sistem disebut...", "answers": [{"text": "Habitat", "isCorrect": false}, {"text": "Niche", "isCorrect": false}, {"text": "Ekosistem", "isCorrect": true}, {"text": "Komunitas", "isCorrect": false}] },
+            { "question": "Contoh dari komponen **abiotik** adalah...", "answers": [{"text": "Tumbuhan dan hewan", "isCorrect": false}, {"text": "Bakteri dan jamur", "isCorrect": false}, {"text": "Tanah, air, dan sinar matahari", "isCorrect": true}, {"text": "Populasi dan komunitas", "isCorrect": false}] },
+            { "question": "Tingkat organisasi kehidupan di atas individu adalah...", "answers": [{"text": "Populasi", "isCorrect": true}, {"text": "Komunitas", "isCorrect": false}, {"text": "Ekosistem", "isCorrect": false}, {"text": "Biosfer", "isCorrect": false}] },
+            { "question": "Kumpulan dari berbagai populasi yang hidup bersama di suatu area tertentu disebut...", "answers": [{"text": "Individu", "isCorrect": false}, {"text": "Komunitas", "isCorrect": true}, {"text": "Ekosistem", "isCorrect": false}, {"text": "Biosfer", "isCorrect": false}] },
+            { "question": "Proses perubahan energi dari satu tingkat trofik ke tingkat trofik berikutnya disebut...", "answers": [{"text": "Daur biogeokimia", "isCorrect": false}, {"text": "Rantai makanan", "isCorrect": false}, {"text": "Aliran energi", "isCorrect": true}, {"text": "Suksesi ekologi", "isCorrect": false}] },
+            { "question": "Organisme yang memproduksi makanannya sendiri melalui fotosintesis disebut...", "answers": [{"text": "Konsumen", "isCorrect": false}, {"text": "Produsen", "isCorrect": true}, {"text": "Dekomposer", "isCorrect": false}, {"text": "Detritivor", "isCorrect": false}] },
+            { "question": "Organisme yang memperoleh energi dengan memakan organisme lain disebut...", "answers": [{"text": "Produsen", "isCorrect": false}, {"text": "Dekomposer", "isCorrect": false}, {"text": "Konsumen", "isCorrect": true}, {"text": "Predator", "isCorrect": false}] },
+            { "question": "Rantai makanan yang dimulai dari detritus (sisa-sisa organisme mati) disebut...", "answers": [{"text": "Rantai makanan perumput", "isCorrect": false}, {"text": "Rantai makanan detritus", "isCorrect": true}, {"text": "Jaring-jaring makanan", "isCorrect": false}, {"text": "Aliran energi", "isCorrect": false}] },
+            { "question": "Contoh dari interaksi simbiosis mutualisme adalah...", "answers": [{"text": "Kutu di rambut manusia", "isCorrect": false}, {"text": "Ikan hiu dan ikan remora", "isCorrect": false}, {"text": "Bunga dan lebah", "isCorrect": true}, {"text": "Tali putri dan inangnya", "isCorrect": false}] },
+            { "question": "Simbiosis parasitisme terjadi ketika...", "answers": [{"text": "Kedua organisme saling menguntungkan", "isCorrect": false}, {"text": "Satu organisme untung dan yang lain tidak dirugikan", "isCorrect": false}, {"text": "Satu organisme untung dan yang lain dirugikan", "isCorrect": true}, {"text": "Kedua organisme dirugikan", "isCorrect": false}] },
+            { "question": "Daur biogeokimia yang paling penting untuk kehidupan karena melibatkan pernapasan adalah daur...", "answers": [{"text": "Daur air", "isCorrect": false}, {"text": "Daur karbon", "isCorrect": true}, {"text": "Daur nitrogen", "isCorrect": false}, {"text": "Daur fosfor", "isCorrect": false}] },
+            { "question": "Faktor abiotik yang mempengaruhi laju fotosintesis adalah...", "answers": [{"text": "Jumlah air dan karbon dioksida", "isCorrect": true}, {"text": "Jenis tumbuhan dan jumlah klorofil", "isCorrect": false}, {"text": "Tingkat trofik", "isCorrect": false}, {"text": "Kumpulan populasi", "isCorrect": false}] },
+            { "question": "Istilah yang menggambarkan semua interaksi di antara komunitas dalam suatu ekosistem adalah...", "answers": [{"text": "Populasi", "isCorrect": false}, {"text": "Komunitas", "isCorrect": true}, {"text": "Biosfer", "isCorrect": false}, {"text": "Habitat", "isCorrect": false}] },
+            { "question": "Tingkat organisasi paling luas yang mencakup seluruh bagian bumi yang dihuni makhluk hidup disebut...", "answers": [{"text": "Ekosistem", "isCorrect": false}, {"text": "Bioma", "isCorrect": false}, {"text": "Biosfer", "isCorrect": true}, {"text": "Komunitas", "isCorrect": false}] },
+            { "question": "Salah satu dampak negatif dari peningkatan gas karbon dioksida di atmosfer adalah...", "answers": [{"text": "Pemanasan global", "isCorrect": true}, {"text": "Penurunan suhu bumi", "isCorrect": false}, {"text": "Peningkatan curah hujan", "isCorrect": false}, {"text": "Ozonasi", "isCorrect": false}] },
+            { "question": "Peran organisme dekomposer dalam ekosistem adalah...", "answers": [{"text": "Memproduksi makanan", "isCorrect": false}, {"text": "Menguraikan sisa-sisa organisme mati", "isCorrect": true}, {"text": "Memakan produsen", "isCorrect": false}, {"text": "Menghasilkan oksigen", "isCorrect": false}] },
+            { "question": "Dalam jaring-jaring makanan, organisme yang menempati beberapa tingkat trofik disebut...", "answers": [{"text": "Herbivora", "isCorrect": false}, {"text": "Omnivora", "isCorrect": true}, {"text": "Karnivora", "isCorrect": false}, {"text": "Produsen", "isCorrect": false}] },
+            { "question": "Bagian dari bumi yang menampung semua kehidupan disebut...", "answers": [{"text": "Litosfer", "isCorrect": false}, {"text": "Hidrosfer", "isCorrect": false}, {"text": "Atmosfer", "isCorrect": false}, {"text": "Biosfer", "isCorrect": true}] },
+            { "question": "Organisme yang memakan tumbuhan dan hewan lain disebut...", "answers": [{"text": "Herbivora", "isCorrect": false}, {"text": "Karnivora", "isCorrect": false}, {"text": "Omnivora", "isCorrect": true}, {"text": "Produsen", "isCorrect": false}] },
+            { "question": "Interaksi di mana satu organisme mendapat manfaat dan yang lain tidak terpengaruh disebut...", "answers": [{"text": "Mutualisme", "isCorrect": false}, {"text": "Komensalisme", "isCorrect": true}, {"text": "Parasitisme", "isCorrect": false}, {"text": "Simbiosis", "isCorrect": false}] },
+            { "question": "Contoh simbiosis komensalisme adalah...", "answers": [{"text": "Bunga dan lebah", "isCorrect": false}, {"text": "Kutu di rambut manusia", "isCorrect": false}, {"text": "Anggrek yang menempel pada pohon", "isCorrect": true}, {"text": "Singa dan zebra", "isCorrect": false}] },
+            { "question": "Daur biogeokimia yang sangat penting dalam pembentukan protein dan asam nukleat adalah daur...", "answers": [{"text": "Daur air", "isCorrect": false}, {"text": "Daur karbon", "isCorrect": false}, {"text": "Daur nitrogen", "isCorrect": true}, {"text": "Daur sulfur", "isCorrect": false}] },
+            { "question": "Apa yang dimaksud dengan populasi?", "answers": [{"text": "Kumpulan individu dari spesies yang berbeda di suatu area", "isCorrect": false}, {"text": "Kumpulan individu dari spesies yang sama di suatu area", "isCorrect": true}, {"text": "Semua makhluk hidup dan benda mati di suatu area", "isCorrect": false}, {"text": "Semua ekosistem di bumi", "isCorrect": false}] },
+            { "question": "Aliran energi dalam ekosistem dimulai dari...", "answers": [{"text": "Konsumen", "isCorrect": false}, {"text": "Dekomposer", "isCorrect": false}, {"text": "Matahari", "isCorrect": true}, {"text": "Bumi", "isCorrect": false}] },
+            { "question": "Proses penguapan air dari permukaan tumbuhan disebut...", "answers": [{"text": "Kondensasi", "isCorrect": false}, {"text": "Presipitasi", "isCorrect": false}, {"text": "Transpirasi", "isCorrect": true}, {"text": "Evaporasi", "isCorrect": false}] },
+            { "question": "Tingkat trofik yang dihuni oleh karnivora puncak disebut...", "answers": [{"text": "Tingkat trofik pertama", "isCorrect": false}, {"text": "Tingkat trofik kedua", "isCorrect": false}, {"text": "Tingkat trofik ketiga atau lebih tinggi", "isCorrect": true}, {"text": "Dekomposer", "isCorrect": false}] },
+            { "question": "Apa peran utama bakteri pengikat nitrogen?", "answers": [{"text": "Mengubah nitrogen dari atmosfer menjadi amonia", "isCorrect": true}, {"text": "Mengubah amonia menjadi nitrogen", "isCorrect": false}, {"text": "Menguraikan protein", "isCorrect": false}, {"text": "Menghasilkan oksigen", "isCorrect": false}] },
+            { "question": "Bioma yang dicirikan oleh curah hujan yang sangat rendah dan suhu ekstrem adalah...", "answers": [{"text": "Hutan hujan tropis", "isCorrect": false}, {"text": "Gurun", "isCorrect": true}, {"text": "Padang rumput", "isCorrect": false}, {"text": "Tundra", "isCorrect": false}] },
+            { "question": "Apa yang membedakan habitat dari niche?", "answers": [{"text": "Habitat adalah peran, niche adalah tempat", "isCorrect": false}, {"text": "Habitat adalah tempat, niche adalah peran atau cara hidup", "isCorrect": true}, {"text": "Keduanya sama", "isCorrect": false}, {"text": "Habitat adalah kumpulan populasi, niche adalah individu", "isCorrect": false}] },
+            { "question": "Fenomena di mana nutrisi terakumulasi di badan air dan menyebabkan pertumbuhan alga yang berlebihan disebut...", "answers": [{"text": "Asidifikasi", "isCorrect": false}, {"text": "Eutrofikasi", "isCorrect": true}, {"text": "Pemanasan global", "isCorrect": false}, {"text": "Erosi", "isCorrect": false}] },
+            { "question": "Organisme yang memakan detritus disebut...", "answers": [{"text": "Dekomposer", "isCorrect": false}, {"text": "Detritivor", "isCorrect": true}, {"text": "Produsen", "isCorrect": false}, {"text": "Konsumen", "isCorrect": false}] },
+            { "question": "Komponen abiotik yang paling memengaruhi persebaran tumbuhan di suatu area adalah...", "answers": [{"text": "Jenis hewan", "isCorrect": false}, {"text": "Curah hujan", "isCorrect": true}, {"text": "Populasi manusia", "isCorrect": false}, {"text": "Dekomposer", "isCorrect": false}] },
+            { "question": "Sebuah komunitas adalah...", "answers": [{"text": "Kumpulan dari individu dari satu spesies", "isCorrect": false}, {"text": "Kumpulan dari berbagai populasi", "isCorrect": true}, {"text": "Semua makhluk hidup dan tidak hidup", "isCorrect": false}, {"text": "Individu yang paling dominan di suatu ekosistem", "isCorrect": false}] },
+            { "question": "Faktor biotik yang mempengaruhi populasi kelinci di hutan adalah...", "answers": [{"text": "Jumlah air minum", "isCorrect": false}, {"text": "Ketersediaan rumput dan predator", "isCorrect": true}, {"text": "Suhu udara", "isCorrect": false}, {"text": "Jenis tanah", "isCorrect": false}] },
+            { "question": "Interaksi predasi melibatkan...", "answers": [{"text": "Satu organisme memakan organisme lain", "isCorrect": true}, {"text": "Dua organisme saling bersaing", "isCorrect": false}, {"text": "Dua organisme saling menguntungkan", "isCorrect": false}, {"text": "Satu organisme mendapatkan manfaat dari yang lain tanpa merugikan", "isCorrect": false}] },
+            { "question": "Apa peran utama fotosintesis dalam ekosistem?", "answers": [{"text": "Menguraikan sisa organisme", "isCorrect": false}, {"text": "Menghasilkan energi kimia dari energi cahaya", "isCorrect": true}, {"text": "Mengatur suhu udara", "isCorrect": false}, {"text": "Mempercepat penguapan air", "isCorrect": false}] },
+            { "question": "Dalam jaring-jaring makanan, organisme omnivora dapat berfungsi sebagai...", "answers": [{"text": "Produsen dan konsumen", "isCorrect": false}, {"text": "Produsen saja", "isCorrect": false}, {"text": "Konsumen primer dan konsumen sekunder", "isCorrect": true}, {"text": "Dekomposer saja", "isCorrect": false}] },
+            { "question": "Apa yang dimaksud dengan suksesi ekologi?", "answers": [{"text": "Perubahan iklim", "isCorrect": false}, {"text": "Perubahan cuaca harian", "isCorrect": false}, {"text": "Perubahan komposisi spesies seiring waktu", "isCorrect": true}, {"text": "Perpindahan populasi hewan", "isCorrect": false}] },
+            { "question": "Contoh daur biogeokimia yang tidak melibatkan atmosfer adalah daur...", "answers": [{"text": "Daur karbon", "isCorrect": false}, {"text": "Daur air", "isCorrect": false}, {"text": "Daur nitrogen", "isCorrect": false}, {"text": "Daur fosfor", "isCorrect": true}] },
+            { "question": "Limbah industri yang dibuang ke sungai dapat menyebabkan...", "answers": [{"text": "Eutrofikasi", "isCorrect": true}, {"text": "Peningkatan kadar oksigen terlarut", "isCorrect": false}, {"text": "Pertumbuhan ikan yang sehat", "isCorrect": false}, {"text": "Penurunan suhu air", "isCorrect": false}] },
+            { "question": "Batas terluar dari biosfer disebut...", "answers": [{"text": "Stratosfer", "isCorrect": false}, {"text": "Troposfer", "isCorrect": false}, {"text": "Ozon", "isCorrect": false}, {"text": "Tidak ada batas yang jelas", "isCorrect": true}] },
+            { "question": "Apa yang dimaksud dengan tingkat trofik?", "answers": [{"text": "Posisi organisme dalam rantai makanan", "isCorrect": true}, {"text": "Jumlah spesies dalam sebuah komunitas", "isCorrect": false}, {"text": "Jumlah total individu dalam sebuah populasi", "isCorrect": false}, {"text": "Daerah geografis tempat organisme tinggal", "isCorrect": false}] },
+            { "question": "Pencemaran air dapat menyebabkan...", "answers": [{"text": "Peningkatan biodiversitas", "isCorrect": false}, {"text": "Kerusakan habitat akuatik", "isCorrect": true}, {"text": "Peningkatan kadar oksigen", "isCorrect": false}, {"text": "Pertumbuhan alga yang sehat", "isCorrect": false}] },
+            { "question": "Dampak dari pemanasan global adalah...", "answers": [{"text": "Penurunan permukaan air laut", "isCorrect": false}, {"text": "Pencairan es di kutub", "isCorrect": true}, {"text": "Peningkatan jumlah spesies", "isCorrect": false}, {"text": "Menghilangkan badai tropis", "isCorrect": false}] },
+            { "question": "Apa itu biomagnifikasi?", "answers": [{"text": "Akumulasi polutan di tingkat trofik yang lebih rendah", "isCorrect": false}, {"text": "Peningkatan konsentrasi polutan di tingkat trofik yang lebih tinggi", "isCorrect": true}, {"text": "Penurunan konsentrasi polutan di ekosistem", "isCorrect": false}, {"text": "Proses dekomposisi polutan", "isCorrect": false}] },
+            { "question": "Peran manusia dalam ekosistem seringkali menyebabkan...", "answers": [{"text": "Keseimbangan ekosistem", "isCorrect": false}, {"text": "Gangguan dan ketidakseimbangan", "isCorrect": true}, {"text": "Peningkatan jumlah produsen", "isCorrect": false}, {"text": "Peningkatan aliran energi", "isCorrect": false}] },
+            { "question": "Apa yang dimaksud dengan keberlanjutan lingkungan?", "answers": [{"text": "Menggunakan sumber daya alam tanpa batas", "isCorrect": false}, {"text": "Memastikan kebutuhan generasi saat ini terpenuhi tanpa mengorbankan generasi mendatang", "isCorrect": true}, {"text": "Melindungi satu spesies saja", "isCorrect": false}, {"text": "Hanya fokus pada daur karbon", "isCorrect": false}] }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginPage = document.getElementById('login-page');
+            const mainApp = document.getElementById('main-app');
+            const welcomeText = document.getElementById('welcome-text');
+            const materiSection = document.getElementById('materi-section');
+            const soalSection = document.getElementById('soal-section');
+            const continueButton = document.getElementById('continue-btn');
+            const quizContainer = document.getElementById('quiz-container');
+            const timerDisplay = document.getElementById('timer-display');
+            const resultSection = document.getElementById('result-section');
+            const resultTitle = document.getElementById('result-title');
+            const resultText = document.getElementById('result-text');
+            const reviewText = document.getElementById('review-text');
+            const loginButton = document.getElementById('login-btn');
+            const nameInput = document.getElementById('name-input');
+            const classSelect = document.getElementById('class-select');
+            const exitButton = document.getElementById('exit-btn');
+
+            // Initialize Firebase
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showModal("Terjadi kesalahan saat menginisialisasi Firebase. Silakan muat ulang halaman.");
+                return;
+            }
+
+            // Authentication listener
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/user_data`);
+                    profileUnsubscribe = onSnapshot(profileRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const userData = docSnap.data();
+                            if (userData.name && userData.class) {
+                                loginPage.classList.add('hidden');
+                                mainApp.classList.remove('hidden');
+                                welcomeText.textContent = `Selamat datang, ${userData.name} (${userData.class})!`;
+                            }
+                        }
+                    }, (error) => {
+                         console.error("Error fetching user data:", error);
+                         showModal("Terjadi kesalahan saat memuat data pengguna. Silakan coba lagi.");
+                    });
+                } else {
+                    await signInAnonymously(auth);
+                }
+            });
+
+            // Login button handler
+            loginButton.addEventListener('click', async () => {
+                const name = nameInput.value.trim();
+                const studentClass = classSelect.value;
+
+                if (name === '' || studentClass === '') {
+                    showModal("Nama Lengkap dan Kelas tidak boleh kosong.");
+                    return;
+                }
+
+                if (!userId) {
+                    showModal("Autentikasi belum siap. Silakan coba lagi.");
+                    return;
+                }
+
+                try {
+                    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/user_data`);
+                    await setDoc(profileRef, {
+                        name: name,
+                        class: studentClass,
+                        timestamp: new Date()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error("Error saving user data:", error);
+                    showModal("Terjadi kesalahan saat menyimpan data. Silakan coba lagi.");
+                }
+            });
+            
+            function showModal(message) {
+                const modal = document.getElementById('custom-modal');
+                const modalText = document.getElementById('modal-text');
+                const closeButton = document.getElementById('close-modal');
+                
+                modalText.textContent = message;
+                modal.classList.remove('hidden');
+                
+                closeButton.onclick = () => {
+                    modal.classList.add('hidden');
+                };
+            }
+
+            // Function to shuffle array
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            // Function to start the quiz
+            function startQuiz() {
+                randomizedSoal = shuffle([...soalData]).slice(0, 15);
+                currentQuestionIndex = 0;
+                score = 0;
+                resultSection.classList.add('hidden');
+                soalSection.classList.remove('hidden');
+                displayQuestion();
+            }
+
+            // Function to display a single question
+            function displayQuestion() {
+                isAnswered = false;
+                if (currentQuestionIndex >= randomizedSoal.length) {
+                    showPostQuizReview();
+                    return;
+                }
+
+                const soal = randomizedSoal[currentQuestionIndex];
+                quizContainer.innerHTML = `
+                    <div class="p-6 bg-white rounded-xl shadow-md space-y-4 relative">
+                        <div class="absolute top-4 right-4 text-sm font-semibold text-gray-500">
+                             Soal ${currentQuestionIndex + 1} / ${randomizedSoal.length}
+                        </div>
+                        <p class="text-lg font-semibold text-gray-800">${soal.question}</p>
+                        <div id="answers-container" class="grid grid-cols-1 gap-4">
+                            ${soal.answers.map((answer, i) => `
+                                <button data-index="${i}" class="answer-btn w-full text-left py-3 px-4 rounded-md shadow-sm bg-gray-100 hover:bg-gray-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    <span class="font-medium">${String.fromCharCode(65 + i)}.</span> ${answer.text}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                timerDisplay.parentElement.classList.remove('hidden');
+                timerDisplay.textContent = timeRemaining;
+                startTimer();
+            }
+
+            // Function to handle the timer
+            function startTimer() {
+                clearInterval(timerId);
+                timeRemaining = 15;
+                timerDisplay.textContent = timeRemaining;
+                timerId = setInterval(() => {
+                    timeRemaining--;
+                    timerDisplay.textContent = timeRemaining;
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerId);
+                        handleTimeout();
+                    }
+                }, 1000);
+            }
+
+            // Function to handle time out
+            function handleTimeout() {
+                if (!isAnswered) {
+                    checkAnswer(-1); // Mark as incorrect
+                }
+            }
+            
+            // Function to check the answer and provide feedback
+            function checkAnswer(selectedIndex) {
+                isAnswered = true;
+                clearInterval(timerId);
+                const currentSoal = randomizedSoal[currentQuestionIndex];
+                const answerButtons = document.querySelectorAll('.answer-btn');
+                
+                let isCorrect = false;
+                if (selectedIndex !== -1) {
+                    isCorrect = currentSoal.answers[selectedIndex].isCorrect;
+                }
+
+                answerButtons.forEach(button => {
+                    const buttonIndex = parseInt(button.dataset.index);
+                    if (currentSoal.answers[buttonIndex].isCorrect) {
+                        button.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+                        button.classList.add('bg-green-500', 'text-white', 'font-bold');
+                    } else if (buttonIndex === selectedIndex) {
+                        button.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+                        button.classList.add('bg-red-500', 'text-white', 'font-bold');
+                    }
+                    button.disabled = true;
+                });
+
+                if (isCorrect) {
+                    score++;
+                }
+
+                setTimeout(moveToNextQuestion, 1500);
+            }
+
+            // Function to move to the next question
+            function moveToNextQuestion() {
+                currentQuestionIndex++;
+                displayQuestion();
+            }
+            
+            // Function to show the final review and suggestions
+            function showPostQuizReview() {
+                soalSection.classList.add('hidden');
+                resultSection.classList.remove('hidden');
+                
+                const percentage = (score / randomizedSoal.length) * 100;
+                resultText.textContent = `Kamu berhasil menjawab ${score} dari ${randomizedSoal.length} soal dengan benar!`;
+
+                let reviewMessage = "";
+                let titleMessage = "";
+
+                if (percentage >= 80) {
+                    titleMessage = "Luar Biasa!";
+                    reviewMessage = "Selamat! Kamu memiliki pemahaman yang sangat baik tentang materi lingkungan. Pertahankan prestasimu dan teruslah belajar hal-hal baru. Semangat!";
+                    resultTitle.classList.add('text-green-600');
+                } else if (percentage >= 60) {
+                    titleMessage = "Kerja Bagus!";
+                    reviewMessage = "Kamu sudah berada di jalur yang benar. Dengan sedikit lebih banyak latihan, kamu pasti bisa menjadi ahli. Baca kembali materi yang kamu rasa sulit dan coba lagi!";
+                    resultTitle.classList.add('text-lime-600');
+                } else {
+                    titleMessage = "Tetap Semangat!";
+                    reviewMessage = "Hasil ini adalah awal yang bagus untuk evaluasi. Jangan berkecil hati! Fokus pada materi yang belum kamu kuasai dan luangkan waktu untuk mempelajarinya lebih dalam. Kamu pasti bisa!";
+                    resultTitle.classList.add('text-red-600');
+                }
+                
+                resultTitle.textContent = titleMessage;
+                reviewText.textContent = reviewMessage;
+            }
+            
+            // "Lanjut" button handler
+            continueButton.addEventListener('click', () => {
+                materiSection.classList.add('hidden');
+                startQuiz();
+            });
+            
+            // "Keluar" button handler
+            exitButton.addEventListener('click', () => {
+                resultSection.classList.add('hidden');
+                materiSection.classList.remove('hidden');
+            });
+
+            // Event listener for answer button clicks
+            quizContainer.addEventListener('click', (event) => {
+                const target = event.target.closest('.answer-btn');
+                if (target && !isAnswered) {
+                    const selectedIndex = parseInt(target.dataset.index);
+                    checkAnswer(selectedIndex);
+                }
+            });
+        });
+    </script>
+</head>
+<body class="bg-gradient-to-br from-lime-50 to-emerald-100 font-sans antialiased text-gray-900">
+
+    <!-- Custom Modal for Alerts -->
+    <div id="custom-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 mx-4 transform scale-100 transition-transform duration-300">
+            <div class="flex flex-col items-center text-center">
+                <div class="p-2 inline-flex items-center justify-center bg-green-100 text-green-600 rounded-full mb-4">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3.042L12.946 3.93c-.77-1.375-2.67-1.375-3.44 0L3.336 17.958c-.77 1.375.193 3.042 1.732 3.042z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-2">Pemberitahuan</h3>
+                <p id="modal-text" class="text-sm text-gray-500 mb-4">Pesan Anda di sini.</p>
+                <button id="close-modal" type="button" class="mt-2 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Page -->
+    <div id="login-page" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Masuk ke Aplikasi</h1>
+            <div class="space-y-4">
+                <div>
+                    <label for="name-input" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
+                    <input type="text" id="name-input" placeholder="Nama Lengkap Anda" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label for="class-select" class="block text-sm font-medium text-gray-700">Kelas</label>
+                    <select id="class-select" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                        <option value="">Pilih Kelas</option>
+                        <option value="X TSM 2">X TSM 2</option>
+                        <option value="X DKV">X DKV</option>
+                    </select>
+                </div>
+                <button id="login-btn" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Masuk
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Page -->
+    <div id="main-app" class="hidden min-h-screen flex flex-col items-center p-6">
+        <div class="w-full max-w-4xl mx-auto space-y-8">
+            <header class="text-center p-6 bg-white rounded-xl shadow-lg">
+                <h1 id="welcome-text" class="text-4xl font-extrabold text-gray-900 mb-2">Selamat datang!</h1>
+                <p class="text-lg text-gray-600">Mari belajar tentang lingkungan dan menguji pemahamanmu.</p>
+            </header>
+
+            <!-- Section 1: Materi -->
+            <div id="materi-section" class="bg-white p-8 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Materi: Lingkungan & Komponennya</h2>
+                <div class="prose max-w-none text-gray-700 leading-relaxed">
+                    <p>Lingkungan adalah segala sesuatu yang berada di sekitar kita, baik itu benda hidup maupun benda mati. Secara lebih rinci, menurut Undang-Undang Nomor 32 Tahun 2009, <strong>lingkungan hidup</strong> adalah kesatuan ruang dengan semua benda, daya, keadaan, dan makhluk hidup, termasuk manusia dan perilakunya, yang mempengaruhi kelangsungan perikehidupan dan kesejahteraan manusia serta makhluk hidup lain. Ini adalah fondasi dari Bab I dalam proyek IPA kelas X fase E.</p>
+                    <p>Lingkungan terdiri dari dua komponen utama yang saling berinteraksi secara dinamis:</p>
+                    
+                    <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-2">1. Komponen Biotik</h3>
+                    <p>Komponen biotik adalah semua unsur hidup dalam lingkungan. Komponen ini dapat dibagi menjadi beberapa kategori berdasarkan perannya dalam ekosistem:</p>
+                    <ul>
+                        <li><strong>Produsen:</strong> Organisme yang dapat membuat makanannya sendiri, biasanya melalui fotosintesis. Contohnya adalah tumbuhan, alga, dan beberapa jenis bakteri.</li>
+                        <li><strong>Konsumen:</strong> Organisme yang mendapatkan energi dengan memakan organisme lain. Konsumen dibagi lagi menjadi:
+                            <ul>
+                                <li>Herbivora (pemakan tumbuhan), seperti sapi dan kelinci.</li>
+                                <li>Karnivora (pemakan daging), seperti singa dan harimau.</li>
+                                <li>Omnivora (pemakan tumbuhan dan daging), seperti manusia dan beruang.</li>
+                            </ul>
+                        </li>
+                        <li><strong>Dekomposer:</strong> Organisme pengurai yang menguraikan sisa-sisa organisme mati menjadi nutrisi sederhana yang dapat digunakan kembali oleh produsen. Contohnya adalah bakteri dan jamur.</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-2">2. Komponen Abiotik</h3>
+                    <p>Komponen abiotik adalah unsur-unsur tak hidup di lingkungan yang memengaruhi kehidupan makhluk hidup. Komponen ini sangat penting untuk kelangsungan hidup ekosistem. Contohnya adalah:</p>
+                    <ul>
+                        <li><strong>Tanah:</strong> Media tempat tumbuhnya tumbuhan dan tempat tinggal banyak organisme.</li>
+                        <li><strong>Air:</strong> Zat yang sangat vital bagi semua bentuk kehidupan.</li>
+                        <li><strong>Udara:</strong> Terdiri dari gas-gas penting seperti oksigen, nitrogen, dan karbon dioksida.</li>
+                        <li><strong>Suhu:</strong> Memengaruhi aktivitas biologis organisme.</li>
+                        <li><strong>Cahaya Matahari:</strong> Sumber energi utama bagi produsen untuk melakukan fotosintesis.</li>
+                    </ul>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-2">Interaksi dalam Ekosistem</h3>
+                    <p>Komponen biotik dan abiotik saling berinteraksi membentuk suatu sistem yang disebut **ekosistem**. Interaksi ini menciptakan keseimbangan alami. Salah satu interaksi penting adalah **rantai makanan**, di mana energi ditransfer dari satu organisme ke organisme lain. Jaring-jaring makanan adalah konsep yang lebih kompleks, menunjukkan hubungan makan-memakan yang saling tumpang tindih. Semua interaksi ini memastikan bahwa lingkungan tetap berfungsi sebagaimana mestinya.</p>
+                    
+                    <div class="mt-8 border-t border-gray-200 pt-6">
+                        <h4 class="text-lg font-bold text-gray-800 mb-2">Sumber Belajar Eksternal</h4>
+                        <p class="text-sm text-gray-600 mb-4">Untuk memperdalam pemahamanmu, kamu bisa membaca lebih lanjut dari sumber berikut:</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>
+                                <a href="https://static.buku.kemdikbud.go.id/content/pdf/bukuteks/kurikulum21/IPA-BG-KLS%20X.pdf" target="_blank" class="text-green-600 hover:text-green-800 underline font-semibold">
+                                    Buku Teks IPA Kelas X (Kurikulum Merdeka)
+                                </a>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    (Tautan ini menuju dokumen resmi dari Kementerian Pendidikan dan Kebudayaan Republik Indonesia)
+                                </p>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <button id="continue-btn" class="mt-8 w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    Lanjut ke Latihan Soal
+                </button>
+            </div>
+
+            <!-- Section 2: Latihan Soal -->
+            <div id="soal-section" class="bg-white p-8 rounded-xl shadow-lg hidden">
+                <div id="timer-container" class="text-right mb-4 flex items-center justify-end space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span id="timer-display" class="text-xl font-bold text-red-500">15</span>
+                </div>
+                <div id="quiz-container" class="space-y-6">
+                    <!-- Soal akan dirender di sini oleh JavaScript -->
+                    <p class="text-gray-500 text-center">Memuat soal...</p>
+                </div>
+            </div>
+            
+            <!-- Section 3: Hasil dan Review -->
+            <div id="result-section" class="bg-white p-8 rounded-xl shadow-lg hidden text-center space-y-6">
+                <h2 id="result-title" class="text-3xl font-bold"></h2>
+                <p id="result-text" class="text-lg font-semibold text-gray-800"></p>
+                <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Review & Saran</h3>
+                    <p id="review-text" class="text-gray-600 leading-relaxed"></p>
+                </div>
+
+                <!-- Perintah untuk screenshot -->
+                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md mt-6" role="alert">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M8.257 3.515a.75.75 0 011.486 0l.525 1.575h2.463c.691 0 1.042.873.53 1.34L12.5 8l1.75 1.625c.512.467.161 1.34-.53 1.34h-2.463l-.525 1.575a.75.75 0 01-1.486 0L8.75 11.575H6.287c-.691 0-1.042-.873-.53-1.34L7.5 8 5.75 6.375c-.512-.467-.161-1.34.53-1.34h2.463l.525-1.575zM12 10a.5.5 0 00-1 0v4.75a.5.5 0 001 0V10z" clip-rule="evenodd" />
+                                <path d="M4 3a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2h-2.5l-1-1H12V5.5c0-.28.22-.5.5-.5h.75a.5.5 0 000-1h-.75A1.5 1.5 0 0011 4v1.5l-.25-.25a.5.5 0 00-.707.707l.25.25H9.5a.5.5 0 000 1H10a.5.5 0 000-1H9a1 1 0 011-1h.25v-.5a.5.5 0 00-1 0V3a1 1 0 00-1 1v1.5L8.5 7h-.75a.5.5 0 000 1h.75A1.5 1.5 0 009 6V4l1-1h2l1 1v1h-1a1 1 0 00-1 1v1.5a.5.5 0 001 0V7h.25a.5.5 0 00.5-.5V4.75a.5.5 0 00-.5-.5h-2.25L10 2.5a.5.5 0 00-1 0l-.75.75H4a1 1 0 00-1 1v1.5a.5.5 0 001 0V5a1 1 0 001-1zM5 8a1 1 0 011-1h.25a.5.5 0 000-1H6a2 2 0 00-2 2v2a2 2 0 002 2h8a2 2 0 002-2v-2a2 2 0 00-2-2h-.25a.5.5 0 000 1H14a1 1 0 011 1v2a1 1 0 01-1 1H6a1 1 0 01-1-1v-2z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium">Perhatian</h3>
+                            <div class="mt-2 text-sm">
+                                <p>Silahkan **Screenshoot** halaman ini dan Kumpulkan pada link yang telah disediakan.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="exit-btn" class="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    Keluar dan Kembali ke Materi
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
