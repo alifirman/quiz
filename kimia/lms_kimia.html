@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS Kimia Interaktif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+        }
+        #question-box {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .quiz-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .quiz-option {
+            background-color: #f9fafb;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .quiz-option:hover {
+            background-color: #e5e7eb;
+        }
+        .quiz-option.selected {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+        .quiz-option.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+            font-weight: 600;
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            font-weight: 600;
+        }
+        .bg-chemistry {
+            background: linear-gradient(to right, #60a5fa, #818cf8);
+        }
+        .bg-quiz {
+            background: linear-gradient(to right, #fca5a5, #f87171);
+        }
+        .bg-materi {
+            background: linear-gradient(to right, #6ee7b7, #34d399);
+        }
+        #share-button {
+            transition: transform 0.2s ease-in-out;
+        }
+        #share-button:active {
+            transform: scale(0.95);
+        }
+        #copy-message {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #copy-message.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 md:p-10">
+
+        <!-- Halaman Utama (Home Page) -->
+        <div id="home-page" class="page">
+            <div class="flex flex-col items-center mb-2">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 text-center mb-2">LMS Kimia</h1>
+                <p class="text-center text-gray-600 mb-6">Eksplorasi Dunia Molekul dan Reaksi!</p>
+                
+                <button id="share-button" class="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47.895-.448A3 3 0 0015 8z" />
+                    </svg>
+                    <span class="font-semibold text-sm">Bagikan Halaman Ini</span>
+                </button>
+                <div id="copy-message" class="mt-2 text-xs text-green-500 font-medium">Tautan disalin!</div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div onclick="showPage('materi-page')" class="card bg-materi text-white p-8">
+                    <h2 class="text-2xl font-bold mb-2">Materi Pembelajaran</h2>
+                    <p>Pelajari berbagai topik kimia dari dasar hingga lanjutan.</p>
+                </div>
+                <div onclick="showPage('quiz-page')" class="card bg-quiz text-white p-8">
+                    <h2 class="text-2xl font-bold mb-2">Latihan Soal & Kuis</h2>
+                    <p>Uji pemahamanmu dengan berbagai kuis interaktif.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Materi (Materi Page) -->
+        <div id="materi-page" class="page hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('home-page')" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 class="text-3xl font-bold text-gray-800 ml-4">Materi Pembelajaran</h1>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <button onclick="showMateri('struktur-atom-periodik')" class="card text-left">
+                    <h3 class="text-xl font-semibold text-gray-800">Bab Struktur Atom dan Sistem Periodik</h3>
+                    <p class="text-gray-600 mt-1">Mengenal teori atom, konfigurasi elektron, dan tabel periodik.</p>
+                </button>
+                <button onclick="showMateri('reaksi-kimia-dasar')" class="card text-left" disabled>
+                    <h3 class="text-xl font-semibold text-gray-800">Coming Soon</h3>
+                    <p class="text-gray-600 mt-1">Memahami jenis-jenis reaksi dan cara menyetarakannya.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Halaman Detail Materi (Materi Detail Page) -->
+        <div id="materi-detail-page" class="page hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('materi-page')" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 id="materi-title" class="text-3xl font-bold text-gray-800 ml-4"></h1>
+            </div>
+            <div id="materi-content" class="text-gray-700 leading-relaxed"></div>
+            <div id="materi-navigation" class="flex justify-between items-center mt-6">
+                <button id="materi-prev-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-full font-semibold transition-colors hover:bg-gray-400">Sebelumnya</button>
+                <span id="materi-page-counter" class="text-sm text-gray-500"></span>
+                <button id="materi-next-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-full font-semibold transition-colors hover:bg-indigo-700">Selanjutnya</button>
+            </div>
+        </div>
+
+        <!-- Halaman Kuis (Quiz Page) -->
+        <div id="quiz-page" class="page hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('home-page')" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 class="text-3xl font-bold text-gray-800 ml-4">Kuis & Latihan Soal</h1>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <button onclick="startQuiz('konfigurasi-elektron')" class="card text-left">
+                    <h3 class="text-xl font-semibold text-gray-800">Kuis Konfigurasi Elektron</h3>
+                    <p class="text-gray-600 mt-1">Uji pemahamanmu tentang susunan elektron dalam atom.</p>
+                </button>
+                <button onclick="startQuiz('reaksi-dan-stoikiometri')" class="card text-left" disabled>
+                    <h3 class="text-xl font-semibold text-gray-800">Coming Soon</h3>
+                    <p class="text-gray-600 mt-1">Asah kemampuanmu dalam menyetarakan reaksi dan perhitungan kimia.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Halaman Detail Kuis (Quiz Detail Page) -->
+        <div id="quiz-detail-page" class="page hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('quiz-page')" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 id="quiz-title" class="text-3xl font-bold text-gray-800 ml-4"></h1>
+            </div>
+            <div id="quiz-content" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center text-gray-600 font-semibold">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        <span id="timer"></span>
+                    </div>
+                    <span id="question-counter" class="text-sm text-gray-500"></span>
+                </div>
+                <div id="question-box" class="mb-6">
+                    <p id="question-text" class="text-lg font-medium text-gray-800 mb-4"></p>
+                    <div id="options-container" class="quiz-container"></div>
+                    <p id="question-hint" class="text-sm italic text-gray-500 mt-4"></p>
+                </div>
+                <div id="quiz-navigation" class="flex justify-between items-center mt-6">
+                    <button id="prev-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-full font-semibold transition-colors hover:bg-gray-400">Sebelumnya</button>
+                    <button id="next-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-full font-semibold transition-colors hover:bg-indigo-700">Selanjutnya</button>
+                </div>
+                <button id="submit-btn" class="hidden w-full bg-green-600 text-white px-6 py-2 rounded-full font-semibold mt-6 transition-colors hover:bg-green-700">Selesai Kuis</button>
+                
+            </div>
+        </div>
+         <!-- Halaman Hasil Kuis (Quiz Result Page) -->
+        <div id="quiz-result" class="page hidden">
+            <div class="flex items-center mb-6">
+                <button onclick="showPage('quiz-page')" class="p-2 rounded-full text-gray-600 hover:bg-gray-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <h1 class="text-3xl font-bold text-gray-800 ml-4">Hasil Kuis</h1>
+            </div>
+            <div class="text-center mb-6">
+                <h2 id="result-title" class="text-2xl font-bold text-gray-800 mb-2"></h2>
+                <p id="score-text" class="text-xl font-semibold text-gray-700 mb-4"></p>
+            </div>
+            <div id="result-details" class="mt-4 text-left"></div>
+            
+            <!-- Tambahan: Bagian Review, Saran, dan Motivasi -->
+            <div class="mt-8 p-6 bg-indigo-50 rounded-lg">
+                <h3 class="text-xl font-bold text-indigo-800 mb-3">Review & Saran Belajar</h3>
+                <p id="review-text" class="text-gray-700 mb-4"></p>
+                <div id="incorrect-review" class="mt-4 space-y-2"></div>
+                <h3 class="text-xl font-bold text-indigo-800 mt-6 mb-3">Motivasi untukmu!</h3>
+                <p id="motivation-text" class="text-gray-700 font-semibold"></p>
+            </div>
+            
+            <button onclick="showPage('quiz-page')" class="w-full mt-6 bg-indigo-600 text-white px-6 py-2 rounded-full font-semibold transition-colors hover:bg-indigo-700">Coba Kuis Lain</button>
+        </div>
+    </div>
+
+    <script>
+        const pages = ['home-page', 'materi-page', 'materi-detail-page', 'quiz-page', 'quiz-detail-page', 'quiz-result'];
+
+        let currentMateriData = null;
+        let currentMateriPage = 0;
+
+        const materiData = {
+            'struktur-atom-periodik': {
+                title: 'Struktur Atom dan Sistem Periodik',
+                pages: [
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Pengantar Teori Atom Modern</h2>
+                        <p class="mb-4">Teori atom modern, juga dikenal sebagai model atom mekanika kuantum, adalah model yang paling akurat saat ini untuk menggambarkan struktur atom. Teori ini dikembangkan oleh fisikawan seperti **Erwin Schrödinger**, **Werner Heisenberg**, dan **Louis de Broglie** pada awal abad ke-20.</p>
+                        <p class="mb-4">Berbeda dengan model Bohr yang menggambarkan elektron bergerak dalam lintasan melingkar yang pasti, model mekanika kuantum menyatakan bahwa elektron memiliki sifat dualitas gelombang-partikel. Ini berarti kita tidak bisa mengetahui posisi dan momentum elektron secara bersamaan dengan tepat (Prinsip Ketidakpastian Heisenberg). Oleh karena itu, elektron tidak digambarkan dalam lintasan, melainkan dalam sebuah **orbital**.</p>
+                        <p class="mb-4">Sebuah orbital adalah sebuah wilayah di sekitar inti atom di mana probabilitas menemukan elektron paling tinggi. Bentuk dan ukuran orbital ini ditentukan oleh energi elektron.</p>
+                        <figure class="my-4 text-center">
+                           <img src="asset/model-atom.png" alt="Model Atom Kuantum" class="rounded-lg mx-auto">
+                           <figcaption class="text-sm text-gray-500 mt-2">Model atom mekanika kuantum menunjukkan awan probabilitas elektron (orbital) di sekitar inti atom.</figcaption>
+                        </figure>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Bilangan Kuantum</h2>
+                        <p class="mb-4">Setiap elektron dalam atom memiliki satu set unik dari empat bilangan kuantum yang mendeskripsikan energinya dan lokasi orbitalnya:</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>**Bilangan Kuantum Utama (<i>n</i>)**: Menentukan tingkat energi utama atau kulit atom. Nilainya adalah bilangan bulat positif (1, 2, 3, ...). Semakin besar <i>n</i>, semakin jauh elektron dari inti dan semakin tinggi energinya.</li>
+                            <li>**Bilangan Kuantum Azimut (<i>l</i>)**: Menentukan subkulit dan bentuk orbital. Nilainya berkisar dari 0 hingga <i>n</i>-1.
+                                <ul class="list-disc list-inside ml-6 mt-1">
+                                    <li><i>l</i> = 0 (orbital s, bentuk bola)</li>
+                                    <li><i>l</i> = 1 (orbital p, bentuk halter)</li>
+                                    <li><i>l</i> = 2 (orbital d, bentuk kompleks)</li>
+                                    <li><i>l</i> = 3 (orbital f, bentuk sangat kompleks)</li>
+                                </ul>
+                            </li>
+                            <li>**Bilangan Kuantum Magnetik (<i>m<sub>l</sub></i>)**: Menentukan orientasi orbital di ruang tiga dimensi. Nilainya berkisar dari -<i>l</i> hingga +<i>l</i>, termasuk nol. Misalnya, untuk <i>l</i>=1 (subkulit p), <i>m<sub>l</sub></i> bisa -1, 0, +1, yang berarti ada tiga orbital p<sub>x</sub>, p<sub>y</sub>, dan p<sub>z</sub>.</li>
+                            <li>**Bilangan Kuantum Spin (<i>m<sub>s</sub></i>)**: Menentukan arah spin elektron. Nilainya hanya bisa +1/2 atau -1/2.</li>
+                        </ul>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Bentuk Orbital</h2>
+                        <p class="mb-4">Bentuk orbital ditentukan oleh bilangan kuantum azimut (<i>l</i>). Berikut adalah deskripsi visual dari beberapa orbital dasar:</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>**Orbital s:** Orbital s memiliki bentuk bola yang sempurna dan simetris di sekitar inti. Hanya ada satu orbital s di setiap kulit (<i>m<sub>l</sub></i> = 0).</li>
+                            <li>**Orbital p:** Orbital p berbentuk seperti halter dan berorientasi di sepanjang sumbu x, y, dan z. Ada tiga orbital p di setiap subkulit p (p<sub>x</sub>, p<sub>y</sub>, p<sub>z</sub>).</li>
+                            <li>**Orbital d:** <figure class="my-4 text-center">
+                              <img src="asset/orbital-d.jpg" alt="Bentuk-bentuk orbital d" class="rounded-lg mx-auto">
+                              <figcaption class="text-sm text-gray-500 mt-2">Bentuk-bentuk orbital d yang lebih kompleks.</figcaption>
+                           </figure>
+ Orbital d memiliki bentuk yang lebih kompleks, biasanya dengan empat lobus (kecuali d<sub>z<sup>2</sup></sub>). Ada lima orbital d di setiap subkulit d.</li>
+                        </ul>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Pengantar Konfigurasi Elektron</h2>
+                        <p class="mb-4">Konfigurasi elektron adalah cara untuk menggambarkan susunan elektron dalam orbital atom. Untuk menuliskannya, kita menggunakan tiga prinsip utama yang harus dipatuhi.</p>
+                        <h3 class="text-xl font-semibold mb-2 mt-4">1. Prinsip Aufbau</h3>
+                        <p class="mb-4">Prinsip ini menyatakan bahwa elektron akan mengisi orbital dengan tingkat energi terendah terlebih dahulu. Urutan pengisian dimulai dari 1s, 2s, 2p, 3s, 3p, 4s, 3d, 4p, .... Urutan ini bisa diingat dengan mengikuti diagram Aufbau.
+                        <figure class="my-4 text-center">
+                           <img src="asset/Aufbau-Principle-700x694.png" alt="Diagram Aufbau" class="rounded-lg mx-auto">
+                           <figcaption class="text-sm text-gray-500 mt-2">Diagram Aufbau, menunjukkan urutan pengisian orbital berdasarkan tingkat energi.</figcaption>
+                        </figure>
+                        </p>
+                        <p class="mb-4">Contoh: Atom Natrium (<sub>11</sub>Na) memiliki 11 elektron. Berdasarkan prinsip Aufbau, konfigurasi elektronnya adalah 1s<sup>2</sup> 2s<sup>2</sup> 2p<sup>6</sup> 3s<sup>1</sup>.</p>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">2. Aturan Hund</h2>
+                        <p class="mb-4">Aturan Hund menyatakan bahwa dalam subkulit yang memiliki beberapa orbital dengan energi yang sama (misalnya subkulit p, d, atau f), setiap orbital akan diisi dengan satu elektron terlebih dahulu sebelum ada orbital yang diisi dengan dua elektron.</p>
+                        <p class="mb-4">Selain itu, semua elektron yang mengisi secara tunggal dalam orbital yang sama harus memiliki spin yang sama (misalnya, semua spin up) untuk meminimalkan tolakan.
+                        
+                        </p>
+                        <p class="mb-4">Contoh: Atom Nitrogen (<sub>7</sub>N) memiliki 7 elektron. Konfigurasi elektronnya adalah 1s<sup>2</sup> 2s<sup>2</sup> 2p<sup>3</sup>. Berdasarkan Aturan Hund, tiga elektron di subkulit 2p akan menempati tiga orbital p secara terpisah, masing-masing dengan spin yang paralel.</p>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">3. Larangan Pauli</h2>
+                        <p class="mb-4">Prinsip Larangan Pauli menyatakan bahwa tidak ada dua elektron dalam satu atom yang dapat memiliki keempat bilangan kuantum (<i>n</i>, <i>l</i>, <i>m<sub>l</sub></i>, <i>m<sub>s</sub></i>) yang sama. Ini berarti setiap orbital hanya bisa menampung maksimal dua elektron, dan kedua elektron tersebut harus memiliki spin yang berlawanan (+1/2 dan -1/2).
+                        
+                        </p>
+                        <p class="mb-4">Konfigurasi elektron untuk ion juga mengikuti aturan ini. Saat atom kehilangan elektron untuk membentuk ion positif (kation), elektron akan dilepaskan dari orbital dengan energi tertinggi. Contoh: ion Al<sup>3+</sup> (nomor atom Al = 13) memiliki 10 elektron. Konfigurasi elektronnya adalah 1s<sup>2</sup> 2s<sup>2</sup> 2p<sup>6</sup>.
+                        </p>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Struktur Dasar Tabel Periodik</h2>
+                        <p class="mb-4">Sistem periodik unsur adalah susunan unsur kimia dalam bentuk tabel, di mana unsur-unsur diurutkan berdasarkan nomor atom (jumlah proton) yang semakin meningkat. Pengaturan ini mengungkapkan tren dan sifat periodik dalam unsur.</p>
+                        <figure class="my-4 text-center">
+                           <img src="asset/Tabel-Periodik.webp" alt="Tabel Periodik" class="rounded-lg mx-auto">
+                           <figcaption class="text-sm text-gray-500 mt-2">Tabel periodik unsur, menunjukkan urutan berdasarkan nomor atom.</figcaption>
+                        </figure>
+                        <p class="mb-4">Tabel periodik terdiri dari baris horizontal yang disebut **periode** dan kolom vertikal yang disebut **golongan** atau **kelompok**.</p>
+                        <ul class="list-disc list-inside space-y-2">
+                            <li>**Periode:** Ada 7 periode dalam tabel periodik. Nomor periode menunjukkan jumlah kulit elektron yang dimiliki oleh atom-atom dalam periode tersebut.</li>
+                            <li>**Golongan:** Ada 18 golongan. Unsur-unsur dalam satu golongan memiliki jumlah elektron valensi (elektron terluar) yang sama, sehingga mereka memiliki sifat kimia yang mirip. Misalnya, semua unsur dalam Golongan 1 (logam alkali) sangat reaktif karena mereka hanya memiliki satu elektron valensi.</li>
+                        </ul>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Tren Sifat Periodik Unsur</h2>
+                        <p class="mb-4">Sifat-sifat unsur berubah secara teratur sepanjang periode dan golongan. Ini adalah tren yang sangat penting dalam kimia.</p>
+                        <h3 class="xl font-semibold mb-2 mt-4">1. Jari-jari Atom</h3>
+                        <p class="mb-4">Jari-jari atom adalah jarak dari inti atom ke elektron terluarnya.
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>**Dalam satu periode:** Jari-jari atom cenderung **berkurang** dari kiri ke kanan. Ini karena muatan inti (jumlah proton) bertambah, menarik elektron lebih dekat ke inti.</li>
+                            <li>**Dalam satu golongan:** Jari-jari atom cenderung **bertambah** dari atas ke bawah. Ini karena jumlah kulit elektron bertambah, membuat atom semakin besar.</li>
+                        </ul>
+                        
+                        </p>
+                    `,
+                    `
+                        <h2 class="text-2xl font-semibold mb-4">Tren Sifat Periodik Lanjutan</h2>
+                        <h3 class="xl font-semibold mb-2 mt-4">2. Energi Ionisasi</h3>
+                        <p class="mb-4">Energi ionisasi adalah energi minimum yang dibutuhkan untuk melepaskan satu elektron dari atom gas netral.
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>**Dalam satu periode:** Energi ionisasi cenderung **bertambah** dari kiri ke kanan. Ini karena jari-jari atom mengecil dan elektron valensi ditarik lebih kuat oleh inti.</li>
+                            <li>**Dalam satu golongan:** Energi ionisasi cenderung **berkurang** dari atas ke bawah. Ini karena elektron terluar berada lebih jauh dari inti dan lebih mudah dilepaskan.</li>
+                        </ul>
+                        <h3 class="xl font-semibold mb-2 mt-4">3. Elektronegativitas</h3>
+                        <p class="mb-4">Elektronegativitas adalah ukuran kemampuan atom untuk menarik elektron dalam ikatan kimia.
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>**Dalam satu periode:** Elektronegativitas cenderung **bertambah** dari kiri ke kanan.</li>
+                            <li>**Dalam satu golongan:** Elektronegativitas cenderung **berkurang** dari atas ke bawah.</li>
+                        </ul>
+                        
+                        </p>
+                    `
+                ]
+            }
+        };
+
+        const quizData = {
+            'konfigurasi-elektron': {
+                title: 'Kuis Konfigurasi Elektron',
+                questionTimeLimit: 20, // Waktu per soal dalam detik
+                questions: [
+                    {
+                        "question": "Siapakah ilmuwan yang pertama kali mengusulkan bahwa materi terdiri dari partikel-partikel kecil yang tidak dapat dibagi lagi, yang ia sebut 'atomos'?",
+                        "options": [
+                        "John Dalton",
+                        "Ernest Rutherford",
+                        "Democritus",
+                        "J.J. Thomson"
+                        ],
+                        "answer": "Democritus",
+                        "level": "Dasar",
+                        "hint": "Jawaban ini berasal dari filsuf Yunani kuno."
+                    },
+                    {
+                        "question": "Model atom 'roti kismis' dikemukakan oleh J.J. Thomson. Partikel subatomik yang digambarkan sebagai 'kismis' yang tersebar di seluruh 'roti' yang bermuatan positif adalah...",
+                        "options": [
+                        "Proton",
+                        "Neutron",
+                        "Elektron",
+                        "Inti atom"
+                        ],
+                        "answer": "Elektron",
+                        "level": "Dasar",
+                        "hint": "Pikirkan partikel subatomik yang memiliki muatan negatif."
+                    },
+                    {
+                        "question": "Dalam atom netral, jumlah elektron sama dengan jumlah...",
+                        "options": [
+                        "Neutron",
+                        "Proton",
+                        "Nomor massa",
+                        "Nomor massa - Nomor atom"
+                        ],
+                        "answer": "Proton",
+                        "level": "Dasar",
+                        "hint": "Pikirkan bagaimana atom dapat netral dari segi muatan."
+                    },
+                    {
+                        "question": "Unsur memiliki 15 proton, 16 neutron, dan 15 elektron. Berapakah nomor atom dan nomor massa unsur tersebut?",
+                        "options": [
+                        "Nomor atom 15, Nomor massa 15",
+                        "Nomor atom 16, Nomor massa 31",
+                        "Nomor atom 15, Nomor massa 31",
+                        "Nomor atom 31, Nomor massa 15"
+                        ],
+                        "answer": "Nomor atom 15, Nomor massa 31",
+                        "level": "Dasar",
+                        "hint": "Ingat definisi dari nomor atom dan nomor massa."
+                    },
+                    {
+                        "question": "Unsur A memiliki nomor atom 13. Tuliskan konfigurasi elektronnya berdasarkan aturan Aufbau.",
+                        "options": [
+                        "1s² 2s² 2p⁶ 3s² 3p¹",
+                        "1s² 2s² 2p⁶ 3s¹",
+                        "1s² 2s² 2p⁶ 3s² 3p⁶",
+                        "1s² 2s² 2p⁶ 3s² 3p¹"
+                        ],
+                        "answer": "1s² 2s² 2p⁶ 3s² 3p¹",
+                        "level": "Menengah",
+                        "hint": "Ingat urutan pengisian elektron: 1s, 2s, 2p, 3s, 3p, ..."
+                    },
+                    {
+                        "question": "Unsur B memiliki konfigurasi elektron 1s² 2s² 2p⁶ 3s² 3p⁶ 4s² 3d⁸. Unsur ini terletak pada periode dan golongan berapa dalam tabel periodik?",
+                        "options": [
+                        "Periode 4, Golongan IIA",
+                        "Periode 3, Golongan VIIIB",
+                        "Periode 4, Golongan VIIIB",
+                        "Periode 4, Golongan IIB"
+                        ],
+                        "answer": "Periode 4, Golongan VIIIB",
+                        "level": "Menengah",
+                        "hint": "Periode ditentukan oleh kulit terluar, dan golongan ditentukan oleh elektron valensi."
+                    },
+                    {
+                        "question": "Prinsip Pauli menyatakan bahwa...",
+                        "options": [
+                        "Elektron mengisi orbital dari tingkat energi yang paling rendah ke yang paling tinggi.",
+                        "Setiap orbital dapat menampung maksimal dua elektron dengan spin berlawanan.",
+                        "Elektron akan menempati semua orbital dengan tingkat energi yang sama sebelum berpasangan.",
+                        "Jumlah elektron dalam atom netral sama dengan jumlah proton."
+                        ],
+                        "answer": "Setiap orbital dapat menampung maksimal dua elektron dengan spin berlawanan.",
+                        "level": "Dasar",
+                        "hint": "Pikirkan tentang spin elektron dalam sebuah orbital."
+                    },
+                    {
+                        "question": "Konfigurasi elektron yang benar untuk unsur Argon (Ar) dengan nomor atom 18 adalah...",
+                        "options": [
+                        "1s² 2s² 2p⁶ 3s² 3p⁴",
+                        "1s² 2s² 2p⁶ 3s² 3p⁶",
+                        "1s² 2s² 2p⁶ 3s² 3p⁵",
+                        "1s² 2s² 2p⁶ 3s² 3d⁶"
+                        ],
+                        "answer": "1s² 2s² 2p⁶ 3s² 3p⁶",
+                        "level": "Dasar",
+                        "hint": "Argon adalah unsur gas mulia, yang memiliki orbital valensi penuh."
+                    },
+                    {
+                        "question": "Unsur Y memiliki konfigurasi elektron 1s² 2s² 2p⁶ 3s¹. Unsur ini akan cenderung membentuk ion dengan muatan...",
+                        "options": [
+                        "+1",
+                        "-1",
+                        "+2",
+                        "-2"
+                        ],
+                        "answer": "+1",
+                        "level": "Menengah",
+                        "hint": "Pikirkan jumlah elektron valensi dan kestabilan konfigurasi gas mulia."
+                    },
+                    {
+                        "question": "Yang manakah dari pernyataan berikut yang paling akurat menggambarkan neutron?",
+                        "options": [
+                        "Partikel bermuatan positif yang ditemukan di inti atom.",
+                        "Partikel bermuatan negatif yang mengelilingi inti atom.",
+                        "Partikel netral yang ditemukan di inti atom.",
+                        "Partikel netral yang mengelilingi inti atom."
+                        ],
+                        "answer": "Partikel netral yang ditemukan di inti atom.",
+                        "level": "Dasar",
+                        "hint": "Fokus pada muatan dan lokasi partikel ini dalam atom."
+                    },
+                    {
+                        "question": "Model atom Niels Bohr menggambarkan elektron yang mengelilingi inti dalam lintasan melingkar yang tetap.",
+                        "options": [
+                        "Benar",
+                        "Salah"
+                        ],
+                        "answer": "Benar",
+                        "level": "Dasar",
+                        "hint": "Pikirkan orbit yang stabil dalam model atom Bohr."
+                    },
+                    {
+                        "question": "Dalam konfigurasi elektron, subkulit f dapat menampung maksimal 10 elektron.",
+                        "options": [
+                        "Benar",
+                        "Salah"
+                        ],
+                        "answer": "Salah",
+                        "level": "Dasar",
+                        "hint": "Ingat jumlah orbital dan elektron maksimum untuk subkulit f."
+                    },
+                    {
+                        "question": "Aturan Hund menyatakan bahwa elektron dalam orbital dengan tingkat energi yang sama akan berpasangan terlebih dahulu sebelum mengisi orbital lain yang kosong.",
+                        "options": [
+                        "Benar",
+                        "Salah"
+                        ],
+                        "answer": "Salah",
+                        "level": "Menengah",
+                        "hint": "Pikirkan urutan pengisian elektron pada orbital-orbital degenerat."
+                    },
+                    {
+                        "question": "Jumlah proton dalam inti atom menentukan jenis unsur kimia.",
+                        "options": [
+                        "Benar",
+                        "Salah"
+                        ],
+                        "answer": "Benar",
+                        "level": "Dasar",
+                        "hint": "Ingat kembali definisi dari nomor atom."
+                    },
+                    {
+                        "question": "Konfigurasi elektron atom netral natrium (Na, nomor atom 11) adalah 1s² 2s² 2p⁶ 3s¹.",
+                        "options": [
+                        "Benar",
+                        "Salah"
+                        ],
+                        "answer": "Benar",
+                        "level": "Dasar",
+                        "hint": "Cek kembali aturan Aufbau untuk nomor atom 11."
+                    },
+                    {
+                        "question": "Sebuah unsur transisi memiliki 3 elektron tidak berpasangan. Unsur tersebut kemungkinan adalah...",
+                        "options": [
+                        "Mangan (Mn)",
+                        "Kobalt (Co)",
+                        "Vanadium (V)",
+                        "Kromium (Cr)"
+                        ],
+                        "answer": "Vanadium (V)",
+                        "level": "sulit",
+                        "hint": "Konfigurasi V (nomor atom 23) adalah [Ar] 4s² 3d³. Tiga elektron di 3d tidak berpasangan sesuai Aturan Hund."
+                    }
+                ]
+            },
+            'reaksi-dan-stoikiometri': {
+                title: 'Kuis Reaksi & Stoikiometri',
+                questionTimeLimit: 20, // Waktu per soal dalam detik
+                questions: [
+                    {
+                        question: "Zat-zat yang berada di sisi kiri dalam sebuah persamaan reaksi kimia disebut...",
+                        options: ["Produk", "Reaktan", "Katalis", "Koefisien"],
+                        answer: "Reaktan",
+                        hint: "Mereka adalah zat awal yang bereaksi."
+                    },
+                    {
+                        question: "Berapakah koefisien dari H<sub>2</sub>O setelah persamaan berikut disetarakan: C<sub>3</sub>H<sub>8</sub> + O<sub>2</sub> → CO<sub>2</sub> + H<sub>2</sub>O?",
+                        options: ["2", "3", "4", "5"],
+                        answer: "4",
+                        hint: "Setarakan atom C dan H terlebih dahulu, baru kemudian atom O."
+                    },
+                    {
+                        question: "Reaksi di mana satu unsur menggantikan unsur lain dalam suatu senyawa disebut reaksi...",
+                        options: ["Sintesis", "Dekomposisi", "Substitusi Tunggal", "Substitusi Ganda"],
+                        answer: "Substitusi Tunggal",
+                        hint: "Pola reaksinya adalah A + BC → AC + B."
+                    },
+                    {
+                        question: "Berdasarkan hukum kekekalan massa, jumlah atom di sisi reaktan harus... jumlah atom di sisi produk.",
+                        options: ["lebih besar dari", "lebih kecil dari", "sama dengan", "tidak berhubungan dengan"],
+                        answer: "sama dengan",
+                        hint: "Massa tidak diciptakan atau dihancurkan."
+                    }
+                ]
+            }
+        };
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let score = 0;
+        let timerInterval;
+
+        function showPage(pageId) {
+            pages.forEach(id => {
+                const page = document.getElementById(id);
+                if (page) {
+                    page.classList.add('hidden');
+                }
+            });
+            const selectedPage = document.getElementById(pageId);
+            if (selectedPage) {
+                selectedPage.classList.remove('hidden');
+            }
+        }
+
+        function showMateri(materiId) {
+            currentMateriData = materiData[materiId];
+            currentMateriPage = 0;
+            document.getElementById('materi-title').textContent = currentMateriData.title;
+            renderMateriPage();
+            showPage('materi-detail-page');
+        }
+
+        function renderMateriPage() {
+            const contentContainer = document.getElementById('materi-content');
+            contentContainer.innerHTML = currentMateriData.pages[currentMateriPage];
+            
+            const prevBtn = document.getElementById('materi-prev-btn');
+            const nextBtn = document.getElementById('materi-next-btn');
+            const pageCounter = document.getElementById('materi-page-counter');
+            
+            prevBtn.disabled = currentMateriPage === 0;
+            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+            
+            nextBtn.disabled = currentMateriPage === currentMateriData.pages.length - 1;
+            nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+            
+            pageCounter.textContent = `Halaman ${currentMateriPage + 1} dari ${currentMateriData.pages.length}`;
+            
+        }
+
+        document.getElementById('materi-next-btn').onclick = () => {
+            if (currentMateriPage < currentMateriData.pages.length - 1) {
+                currentMateriPage++;
+                renderMateriPage();
+            }
+        };
+
+        document.getElementById('materi-prev-btn').onclick = () => {
+            if (currentMateriPage > 0) {
+                currentMateriPage--;
+                renderMateriPage();
+            }
+        };
+        
+        function startQuiz(quizId) {
+            currentQuiz = quizData[quizId];
+            shuffleArray(currentQuiz.questions);
+            currentQuestionIndex = 0;
+            userAnswers = Array(currentQuiz.questions.length).fill(null);
+            score = 0;
+
+            document.getElementById('quiz-title').textContent = currentQuiz.title;
+            document.getElementById('quiz-result').classList.add('hidden');
+            document.getElementById('quiz-navigation').classList.remove('hidden');
+            document.getElementById('submit-btn').classList.add('hidden');
+            document.getElementById('quiz-content').classList.remove('hidden');
+            
+            renderQuestion();
+            showPage('quiz-detail-page');
+        }
+
+        function startQuestionTimer(duration) {
+            clearInterval(timerInterval);
+            let timer = duration;
+            const timerDisplay = document.getElementById('timer');
+            timerDisplay.textContent = formatTime(timer);
+
+            timerInterval = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = formatTime(timer);
+                if (timer <= 0) {
+                    clearInterval(timerInterval);
+                    if (currentQuestionIndex < currentQuiz.questions.length - 1) {
+                        currentQuestionIndex++;
+                        renderQuestion();
+                    } else {
+                        calculateScore();
+                        showResult();
+                    }
+                }
+            }, 1000);
+        }
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `⏳ ${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        function renderQuestion() {
+            if (!currentQuiz || currentQuestionIndex >= currentQuiz.questions.length) {
+                calculateScore();
+                showResult();
+                return;
+            }
+            const question = currentQuiz.questions[currentQuestionIndex];
+            document.getElementById('question-text').innerHTML = question.question;
+            document.getElementById('question-counter').textContent = `${currentQuestionIndex + 1}/${currentQuiz.questions.length}`;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            const optionsToRender = [...question.options];
+            shuffleArray(optionsToRender);
+
+            optionsToRender.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'quiz-option text-gray-700 rounded-md';
+                optionElement.innerHTML = option;
+                optionElement.onclick = () => selectOption(question.options.indexOf(option));
+                optionsContainer.appendChild(optionElement);
+            });
+
+            document.getElementById('question-hint').innerHTML = question.hint || '';
+            
+            if (userAnswers[currentQuestionIndex] !== null) {
+                const selectedOptionText = currentQuiz.questions[currentQuestionIndex].options[userAnswers[currentQuestionIndex]];
+                const elements = optionsContainer.children;
+                for (let i = 0; i < elements.length; i++) {
+                    if (elements[i].innerHTML === selectedOptionText) {
+                        elements[i].classList.add('selected');
+                        break;
+                    }
+                }
+            }
+            
+            updateNavigationButtons();
+            startQuestionTimer(currentQuiz.questionTimeLimit);
+        }
+
+        function selectOption(originalIndex) {
+            clearInterval(timerInterval);
+            const optionsContainer = document.getElementById('options-container');
+            Array.from(optionsContainer.children).forEach(child => child.classList.remove('selected'));
+
+            const selectedOptionText = currentQuiz.questions[currentQuestionIndex].options[originalIndex];
+            const elements = optionsContainer.children;
+            for (let i = 0; i < elements.length; i++) {
+                if (elements[i].innerHTML === selectedOptionText) {
+                    elements[i].classList.add('selected');
+                    break;
+                }
+            }
+            userAnswers[currentQuestionIndex] = originalIndex;
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const submitBtn = document.getElementById('submit-btn');
+
+            prevBtn.disabled = currentQuestionIndex === 0;
+            prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+
+            if (currentQuestionIndex === currentQuiz.questions.length - 1) {
+                nextBtn.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                submitBtn.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('next-btn').onclick = () => {
+            currentQuestionIndex++;
+            renderQuestion();
+        };
+
+        document.getElementById('prev-btn').onclick = () => {
+            currentQuestionIndex--;
+            renderQuestion();
+        };
+
+        document.getElementById('submit-btn').onclick = () => {
+            clearInterval(timerInterval);
+            calculateScore();
+            showResult();
+        };
+
+        function calculateScore() {
+            score = 0;
+            currentQuiz.questions.forEach((q, index) => {
+                const selectedOptionIndex = userAnswers[index];
+                if (selectedOptionIndex !== null) {
+                    const selectedOptionText = q.options[selectedOptionIndex];
+                    if (selectedOptionText === q.answer) {
+                        score++;
+                    }
+                }
+            });
+        }
+
+        function showResult() {
+            showPage('quiz-result');
+            
+            const percentage = (score / currentQuiz.questions.length);
+            
+            let resultTitle, reviewText, motivationText;
+
+            if (percentage >= 0.8) {
+                resultTitle = 'Hebat! Anda Luar Biasa! 🥳';
+                reviewText = 'Anda memiliki pemahaman yang sangat kuat tentang materi ini. Pertahankan hasil ini dengan terus berlatih!';
+                motivationText = 'Ilmu kimia adalah fondasi untuk banyak penemuan besar. Teruslah mengeksplorasi karena potensi Anda tidak terbatas!';
+            } else if (percentage >= 0.5) {
+                resultTitle = 'Kerja Bagus! Terus Tingkatkan! 💪';
+                reviewText = 'Hasil Anda cukup baik. Fokus pada konsep yang masih kurang tepat, dan Anda akan menguasainya.';
+                motivationText = 'Setiap kesalahan adalah langkah menuju pemahaman yang lebih baik. Jadikan ini motivasi untuk belajar lebih giat lagi!';
+            } else {
+                resultTitle = 'Jangan Menyerah, Coba Lagi! 🤓';
+                reviewText = 'Jangan khawatir! Ini adalah kesempatan bagus untuk meninjau kembali materi. Perhatikan jawaban yang salah dan pelajari kembali konsepnya.';
+                motivationText = 'Kimia adalah ilmu yang membutuhkan kesabaran. Setiap usaha Anda tidak akan sia-sia. Ayo, bangkit dan coba lagi!';
+            }
+
+            document.getElementById('result-title').textContent = resultTitle;
+            document.getElementById('score-text').textContent = `Skor Anda: ${score} dari ${currentQuiz.questions.length}`;
+            document.getElementById('review-text').textContent = reviewText;
+            document.getElementById('motivation-text').textContent = motivationText;
+
+            const incorrectReviewContainer = document.getElementById('incorrect-review');
+            incorrectReviewContainer.innerHTML = '';
+            
+            const incorrectQuestions = currentQuiz.questions.filter((q, index) => {
+                const selectedOptionIndex = userAnswers[index];
+                const selectedOptionText = selectedOptionIndex !== null ? q.options[selectedOptionIndex] : null;
+                return selectedOptionText !== q.answer;
+            });
+
+            if (incorrectQuestions.length > 0) {
+                incorrectQuestions.forEach(q => {
+                    const reviewItem = document.createElement('div');
+                    reviewItem.className = 'p-4 rounded-md bg-red-100 border border-red-200';
+                    reviewItem.innerHTML = `<p class="font-bold text-red-800 mb-1">Soal: ${q.question}</p>
+                                             <p class="text-red-700">Jawaban Benar: <span class="font-bold">${q.answer}</span></p>
+                                             <p class="mt-2 italic text-sm text-gray-600">${q.hint}</p>`;
+                    incorrectReviewContainer.appendChild(reviewItem);
+                });
+            } else {
+                incorrectReviewContainer.innerHTML = `<p class="text-green-700 font-bold">Semua jawaban Anda benar! Luar biasa!</p>`;
+            }
+        }
+
+        document.getElementById('share-button').addEventListener('click', () => {
+            const url = window.location.href;
+            const message = document.getElementById('copy-message');
+            
+            try {
+                const tempInput = document.createElement('input');
+                tempInput.value = url;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                
+                message.classList.add('show');
+                setTimeout(() => {
+                    message.classList.remove('show');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        });
+
+        window.onload = function() {
+            showPage('home-page');
+        };
+
+    </script>
+
+</body>
+</html>
